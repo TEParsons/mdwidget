@@ -114,6 +114,28 @@ class MarkdownCtrl(qt.QWidget):
         # apply to HTML viewer
         self.renderedHTMLCtrl.setBody(htmlContent)
     
+    def getCtrl(self, flag):
+        """
+        """
+        for thisFlag, ctrl in [
+            (MarkdownCtrlFlag.RawMarkdownCtrl, self.rawMarkdownCtrl),
+            (MarkdownCtrlFlag.RawHtmlCtrl, self.rawHTMLCtrl),
+            (MarkdownCtrlFlag.RenderedHtmlCtrl, self.renderedHTMLCtrl),
+        ]:
+            if thisFlag == flag:
+                return ctrl
+    
+    def getButton(self, flag):
+        """
+        """
+        for thisFlag, btn in [
+            (MarkdownCtrlFlag.RawMarkdownCtrlButton, self.rawMarkdownCtrlToggle),
+            (MarkdownCtrlFlag.RawHtmlCtrlButton, self.rawHtmlCtrlToggle),
+            (MarkdownCtrlFlag.RenderedHtmlCtrlButton, self.renderedHtmlCtrlToggle),
+        ]:
+            if thisFlag == flag:
+                return btn
+    
     def setWindowFlags(self, flags):
         """
         """
