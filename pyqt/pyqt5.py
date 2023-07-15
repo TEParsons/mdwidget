@@ -1,4 +1,5 @@
 import traceback
+import enum
 import pygments, pygments.lexers
 import PyQt5.QtCore as util
 import PyQt5.QtWidgets as qt
@@ -12,10 +13,44 @@ from ..themes.viewer import current as viewerTheme
 from ..assets import folder as assetsFolder
 
 
+class MarkdownCtrlFlag(enum.Flag):
+    # identifiers for controls
+    RawMarkdownCtrl = enum.auto()
+    RawHtmlCtrl = enum.auto()
+    RenderedHtmlCtrl = enum.auto()
+    AllCtrls = RawMarkdownCtrl | RawHtmlCtrl | RenderedHtmlCtrl
+    # identifiers for toggle buttons
+    RawMarkdownCtrlButton = enum.auto()
+    RawHtmlCtrlButton = enum.auto()
+    RenderedHtmlCtrlButton = enum.auto()
+    AllCtrlButtons = RawMarkdownCtrlButton | RawHtmlCtrlButton | RenderedHtmlCtrlButton
+    # button position options
+    LeftButtonsArea = enum.auto()
+    RightButtonsArea = enum.auto()
+    TopButtonsArea = enum.auto()
+    BottomButtonsArea = enum.auto()
+    # button alignment options
+    AlignButtonsLeading = enum.auto()
+    AlignButtonsCenter = enum.auto()
+    AlignButtonsTrailing = enum.auto()
+    # button style options
+    ButtonIconOnly = enum.auto()
+    ButtonTextOnly = enum.auto()
+    ButtonTextBesideIcon = enum.auto()
+
+    # default style
+    Default = (
+        RawMarkdownCtrl | RenderedHtmlCtrl | 
+        RawMarkdownCtrlButton | RenderedHtmlCtrlButton | 
+        BottomButtonsArea | AlignButtonsCenter | ButtonIconOnly
+    )
+
+
 class MarkdownCtrl(qt.QWidget):
+    MarkdownCtrlFlag = MarkdownCtrlFlag
     def __init__(
-            self, parent, interpreter=None, 
-            minCtrlSize=(256, 256), alignment=()
+            self, parent, interpreter=None, minCtrlSize=(256, 256), 
+            flags=MarkdownCtrlFlag.Default
         ):
         # initialise
         qt.QWidget.__init__(self, parent)
@@ -50,15 +85,16 @@ class MarkdownCtrl(qt.QWidget):
 
         # add view toggle
         self.viewToggleCtrl = ViewToggleCtrl(self)
-        self.viewToggleCtrl.addButton(ctrl=self.rawMarkdownCtrl, iconName="view_md", label="Markdown code")
-        self.viewToggleCtrl.addButton(ctrl=self.rawHTMLCtrl, iconName="view_html", label="HTML code")
-        self.viewToggleCtrl.addButton(ctrl=self.renderedHTMLCtrl, iconName="view_preview", label="HTML preview")
-        self.setButtonValues((True, False, True))
-        self.setButtonVisibility((True, True, True))
+        self.rawMarkdownCtrlToggle = self.viewToggleCtrl.addButton(ctrl=self.rawMarkdownCtrl, iconName="view_md", label="Markdown code")
+        self.rawHtmlCtrlToggle = self.viewToggleCtrl.addButton(ctrl=self.rawHTMLCtrl, iconName="view_html", label="HTML code")
+        self.renderedHtmlCtrlToggle = self.viewToggleCtrl.addButton(ctrl=self.renderedHTMLCtrl, iconName="view_preview", label="HTML preview")
         self.sizer.addWidget(self.viewToggleCtrl)
 
         # bind to render function
         self.rawMarkdownCtrl.textChanged.connect(self.renderHTML)
+
+        # set flags
+        self.setWindowFlags(flags)
     
     def renderHTML(self, event=None):
         # get markdown
@@ -78,83 +114,97 @@ class MarkdownCtrl(qt.QWidget):
         # apply to HTML viewer
         self.renderedHTMLCtrl.setBody(htmlContent)
     
-    def setButtonValues(self, values):
-        self.viewToggleCtrl.setValues(values)
+    def setWindowFlags(self, flags):
+        """
+        """
+        # set ctrl visibility
+        self.setCtrlVisibility(False)
+        self.setCtrlVisibility(True, flags=flags)
+        # set button visibility
+        self.setButtonVisibility(False)
+        self.setButtonVisibility(True, flags=flags)
+        # set button style
+        self.setButtonStyle(flags, flags=MarkdownCtrlFlag.AllCtrlButtons)
+        # set buttons position
+        self.setButtonsPosition(flags)        
+        # set button alignment
+        self.setButtonsAlignment(flags)
+        # remove all bespoke flags
+        for attr in dir(MarkdownCtrlFlag):
+            flag = getattr(MarkdownCtrlFlag, attr)
+            if isinstance(flag, enum.Flag):
+                flags &= flag
     
-    def setButtonVisibility(self, visible):
-        self.viewToggleCtrl.setVisibility(visible)
+    def setCtrlVisibility(self, visibility, flags=MarkdownCtrlFlag.AllCtrls):
+        """
+        """
+        for flag, ctrl, btn in [
+            (MarkdownCtrlFlag.RawMarkdownCtrl, self.rawMarkdownCtrl, self.rawMarkdownCtrlToggle),
+            (MarkdownCtrlFlag.RawHtmlCtrl, self.rawHTMLCtrl, self.rawHtmlCtrlToggle),
+            (MarkdownCtrlFlag.RenderedHtmlCtrl, self.renderedHTMLCtrl, self.renderedHtmlCtrlToggle),
+        ]:
+            if flag in flags and visibility:
+                # if flag is present, show the corresponding ctrl (setting its button to True)
+                ctrl.show()
+                btn.setChecked(True)
+            elif flag in flags:
+                # otherwise, hide the corresponding ctrl (setting its button to False)
+                ctrl.hide()
+                btn.setChecked(False)
     
-    def setButtonStyle(self, style):
+    def setButtonVisibility(self, visibility, flags=MarkdownCtrlFlag.AllCtrlButtons):
         """
-        Set the style for view toggle buttons.
+        """
+        for flag, btn in [
+            (MarkdownCtrlFlag.RawMarkdownCtrlButton, self.rawMarkdownCtrlToggle),
+            (MarkdownCtrlFlag.RawHtmlCtrlButton, self.rawHtmlCtrlToggle),
+            (MarkdownCtrlFlag.RenderedHtmlCtrlButton, self.renderedHtmlCtrlToggle),
+        ]:
+            if flag in flags and visibility:
+                # if visibility is True, show corresponding component
+                btn.show()
+            elif flag in flags:
+                # if False, hide the corresponding button
+                btn.hide()
 
-        Parameters
-        ----------
-        ori : PyQt5.QtCore.Qt.ToolButtonStyle
-            How should the buttons look? Default is ToolButtonIconOnly.
-            - ToolButtonIconOnly : Only show icons, no label
-            - ToolButtonTextOnly : Only show label, no icon
-            - ToolButtonTextBesideIcon : Show icon and label
-        """
-        self.viewToggleCtrl.setStyle(style)
     
-    def setButtonAlignment(self, align):
+    def setButtonStyle(self, style, flags=MarkdownCtrlFlag.AllCtrlButtons):
         """
-        Set the alignment of view toggle buttons within their panel.
-
-        Parameters
-        ----------
-        align : PyQt5.QtCore.Qt.AlignmentFlag
-            One or more (combined via the | operator) AlignmentFlag.
-
-            Horizontal flags (ignored when orientation is vertical):
-            - AlignLeft : Align to the left of the panel
-            - AlignHCenter : Align to the center of the panel
-            - AlignRight : Align to the right of the panel
-
-            Vertical flags (ignored when orientation is horizontal):
-            - AlignTop : Align to the top of the panel
-            - AlignVCenter : Align to the center of the panel
-            - AlignBottom : Align to the bottom of the panel
-
-            Bidirectional flags (always used):
-            - AlignLeading : Align to the start of the panel
-            - AlignCenter : Align to the center of the panel
-            - AlignTrailing : Align to the end of the panel
-        
-            Default is AlignCenter.
         """
-        self.viewToggleCtrl.sizer.setAlignment(align)
+        for flag, btn in [
+            (MarkdownCtrlFlag.RawMarkdownCtrlButton, self.rawMarkdownCtrlToggle),
+            (MarkdownCtrlFlag.RawHtmlCtrlButton, self.rawHtmlCtrlToggle),
+            (MarkdownCtrlFlag.RenderedHtmlCtrlButton, self.renderedHtmlCtrlToggle),
+        ]:
+            if flag in flags:
+                # if visibility is True, show corresponding component
+                btn.setStyle(style)
     
-    def setButtonPosition(self, pos):
+    def setButtonsPosition(self, pos):
         """
-        Set the position of the toggle buttons panel within this control.
-
-        Parameters
-        ----------
-        pos : PyQt5.QtCore.Qt.ToolBarArea
-            Where should the buttons panel be relative to the text controls? Default is BottomToolBarArea.
-            - LeftToolBarArea : Buttons will be to the left of text controls
-            - RightToolBarArea : Buttons will be to the right of text controls
-            - TopToolBarArea : Buttons will be above text controls
-            - BottomToolBarArea : Buttons will be below text controls
         """
-        # set to left position
-        if pos | util.Qt.LeftToolBarArea == pos:
-            self.sizer.setDirection(self.sizer.Direction.RightToLeft)
-            self.viewToggleCtrl.sizer.setDirection(self.sizer.Direction.TopToBottom)
-        # set to right position
-        if pos | util.Qt.RightToolBarArea == pos:
-            self.sizer.setDirection(self.sizer.Direction.LeftToRight)
-            self.viewToggleCtrl.sizer.setDirection(self.sizer.Direction.TopToBottom)
-        # set to top position
-        if pos | util.Qt.TopToolBarArea == pos:
-            self.sizer.setDirection(self.sizer.Direction.BottomToTop)
-            self.viewToggleCtrl.sizer.setDirection(self.sizer.Direction.LeftToRight)
-        # set to right position
-        if pos | util.Qt.BottomToolBarArea == pos:
-            self.sizer.setDirection(self.sizer.Direction.TopToBottom)
-            self.viewToggleCtrl.sizer.setDirection(self.sizer.Direction.LeftToRight)
+        for flag, sizerDir, btnSizerDir in [
+            (MarkdownCtrlFlag.LeftButtonsArea, self.sizer.Direction.RightToLeft, self.sizer.Direction.TopToBottom),
+            (MarkdownCtrlFlag.RightButtonsArea, self.sizer.Direction.LeftToRight, self.sizer.Direction.TopToBottom),
+            (MarkdownCtrlFlag.TopButtonsArea, self.sizer.Direction.BottomToTop, self.sizer.Direction.LeftToRight),
+            (MarkdownCtrlFlag.BottomButtonsArea, self.sizer.Direction.TopToBottom, self.sizer.Direction.LeftToRight),
+        ]:
+            if pos | flag == pos:
+                # if flag is present, use sizer directions to move buttons to the corresponding area
+                self.sizer.setDirection(sizerDir)
+                self.viewToggleCtrl.sizer.setDirection(btnSizerDir)
+    
+    def setButtonsAlignment(self, align):
+        """
+        """
+        for flag, sizerFlag in [
+            (MarkdownCtrlFlag.AlignButtonsLeading, util.Qt.AlignLeading),
+            (MarkdownCtrlFlag.AlignButtonsCenter, util.Qt.AlignCenter),
+            (MarkdownCtrlFlag.AlignButtonsTrailing, util.Qt.AlignTrailing),
+        ]:
+            if align | flag == align:
+                # if flag is present, apply corresponding alignment to button sizer
+                self.viewToggleCtrl.sizer.setAlignment(sizerFlag)
 
 
 class ViewToggleCtrl(qt.QWidget):  
@@ -180,15 +230,14 @@ class ViewToggleCtrl(qt.QWidget):
             self.setText(label)
         
         def setStyle(self, style):
-            if style | util.Qt.ToolButtonIconOnly == style:
-                self.setIcon(self._icon)
-                self.setText("")
-            if style | util.Qt.ToolButtonTextOnly == style:
-                self.setIcon(gui.QIcon())
-                self.setText(self._label)
-            if style | util.Qt.ToolButtonTextBesideIcon == style:
-                self.setIcon(self._icon)
-                self.setText(self._label)
+            for flag, icon, text in [
+                (MarkdownCtrlFlag.ButtonIconOnly, self._icon, ""),
+                (MarkdownCtrlFlag.ButtonTextOnly, gui.QIcon(), self._label),
+                (MarkdownCtrlFlag.ButtonTextBesideIcon, self._icon, self._label),
+            ]:
+                if flag in style:
+                    self.setIcon(icon)
+                    self.setText(text)
         
         def onClick(self, evt=None):
             if self.isChecked():
@@ -205,18 +254,16 @@ class ViewToggleCtrl(qt.QWidget):
         self.sizer.setAlignment(util.Qt.AlignCenter)
         # array for buttons
         self.btns = []
-        # set default style
-        self.setStyle(util.Qt.ToolButtonIconOnly)
     
     def addButton(self, ctrl, iconName=None, label=""):
         # make button
         btn = self.ViewToggleButton(self, ctrl, iconName=iconName, label=label)
-        # apply own style
-        btn.setStyle(self._style)
         # store button handle
         self.btns.append(btn)
         # add to sizer
         self.sizer.addWidget(btn)
+
+        return btn
     
     def setValues(self, values):
         # if given a single bool, make iterable
