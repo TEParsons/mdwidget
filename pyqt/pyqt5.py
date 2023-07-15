@@ -174,12 +174,12 @@ class MarkdownCtrl(qt.QWidget):
         """
         # set ctrl visibility
         self.setCtrlVisibility(False)
-        self.setCtrlVisibility(True, flags=flags)
+        self.setCtrlVisibility(True, ctrls=flags)
         # set button visibility
         self.setButtonVisibility(False)
-        self.setButtonVisibility(True, flags=flags)
+        self.setButtonVisibility(True, buttons=flags)
         # set button style
-        self.setButtonStyle(flags, flags=MarkdownCtrlFlag.AllCtrlButtons)
+        self.setButtonStyle(flags, buttons=MarkdownCtrlFlag.AllCtrlButtons)
         # set buttons position
         self.setButtonsPosition(flags)        
         # set button alignment
