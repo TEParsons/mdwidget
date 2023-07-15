@@ -121,6 +121,10 @@ class MarkdownCtrl(qt.QWidget):
             (MarkdownCtrlFlag.RawMarkdownCtrl, self.rawMarkdownCtrl),
             (MarkdownCtrlFlag.RawHtmlCtrl, self.rawHTMLCtrl),
             (MarkdownCtrlFlag.RenderedHtmlCtrl, self.renderedHTMLCtrl),
+            # if given a button, return its ctrl
+            (MarkdownCtrlFlag.RawMarkdownCtrlButton, self.rawMarkdownCtrl),
+            (MarkdownCtrlFlag.RawHtmlCtrlButton, self.rawHTMLCtrl),
+            (MarkdownCtrlFlag.RenderedHtmlCtrlButton, self.renderedHTMLCtrl),
         ]:
             if thisFlag == flag:
                 return ctrl
@@ -132,9 +136,38 @@ class MarkdownCtrl(qt.QWidget):
             (MarkdownCtrlFlag.RawMarkdownCtrlButton, self.rawMarkdownCtrlToggle),
             (MarkdownCtrlFlag.RawHtmlCtrlButton, self.rawHtmlCtrlToggle),
             (MarkdownCtrlFlag.RenderedHtmlCtrlButton, self.renderedHtmlCtrlToggle),
+            # if given a ctrl, return its button
+            (MarkdownCtrlFlag.RawMarkdownCtrl, self.rawMarkdownCtrlToggle),
+            (MarkdownCtrlFlag.RawHtmlCtrl, self.rawHtmlCtrlToggle),
+            (MarkdownCtrlFlag.RenderedHtmlCtrl, self.renderedHtmlCtrlToggle),
         ]:
             if thisFlag == flag:
                 return btn
+    
+    def _getFlags(self, objs):
+        """
+        """
+        flag = self._getFlag(objs[0])
+        for obj in objs:
+            flag |= self._getFlag(obj)
+        
+        return flag
+    
+    def _getFlag(self, obj):
+        """
+        """
+        flagMap = {
+            # controls
+            self.rawMarkdownCtrl: MarkdownCtrlFlag.RawMarkdownCtrl,
+            self.rawHTMLCtrl: MarkdownCtrlFlag.RawHtmlCtrl,
+            self.renderedHTMLCtrl: MarkdownCtrlFlag.RenderedHtmlCtrl,
+            # buttons
+            self.rawMarkdownCtrlToggle: MarkdownCtrlFlag.RawMarkdownCtrlButton,
+            self.rawHtmlCtrlToggle: MarkdownCtrlFlag.RawHtmlCtrlButton,
+            self.renderedHtmlCtrlToggle: MarkdownCtrlFlag.RenderedHtmlCtrlButton
+        }
+
+        return flagMap[obj]        
     
     def setWindowFlags(self, flags):
         """
@@ -157,50 +190,68 @@ class MarkdownCtrl(qt.QWidget):
             if isinstance(flag, enum.Flag):
                 flags &= flag
     
-    def setCtrlVisibility(self, visibility, flags=MarkdownCtrlFlag.AllCtrls):
+    def setCtrlVisibility(self, visibility, ctrls=MarkdownCtrlFlag.AllCtrls):
         """
         """
-        for flag, ctrl, btn in [
-            (MarkdownCtrlFlag.RawMarkdownCtrl, self.rawMarkdownCtrl, self.rawMarkdownCtrlToggle),
-            (MarkdownCtrlFlag.RawHtmlCtrl, self.rawHTMLCtrl, self.rawHtmlCtrlToggle),
-            (MarkdownCtrlFlag.RenderedHtmlCtrl, self.renderedHTMLCtrl, self.renderedHtmlCtrlToggle),
+        # if given object handle(s), get flags
+        if isinstance(ctrls, (list, tuple)):
+            ctrls = self._getFlags(ctrls)
+        if isinstance(ctrls, (qt.QWidget, qt.QPushButton)):
+            ctrls = self._getFlag(ctrls)
+        # check flags
+        for flag in [
+            MarkdownCtrlFlag.RawMarkdownCtrl,
+            MarkdownCtrlFlag.RawHtmlCtrl,
+            MarkdownCtrlFlag.RenderedHtmlCtrl,
         ]:
-            if flag in flags and visibility:
+            if flag in ctrls and visibility:
                 # if flag is present, show the corresponding ctrl (setting its button to True)
-                ctrl.show()
-                btn.setChecked(True)
-            elif flag in flags:
+                self.getCtrl(flag).show()
+                self.getButton(flag).setChecked(True)
+            elif flag in ctrls:
                 # otherwise, hide the corresponding ctrl (setting its button to False)
-                ctrl.hide()
-                btn.setChecked(False)
+                self.getCtrl(flag).hide()
+                self.getButton(flag).setChecked(False)
     
-    def setButtonVisibility(self, visibility, flags=MarkdownCtrlFlag.AllCtrlButtons):
+    def setButtonVisibility(self, visibility, buttons=MarkdownCtrlFlag.AllCtrlButtons):
         """
         """
-        for flag, btn in [
-            (MarkdownCtrlFlag.RawMarkdownCtrlButton, self.rawMarkdownCtrlToggle),
-            (MarkdownCtrlFlag.RawHtmlCtrlButton, self.rawHtmlCtrlToggle),
-            (MarkdownCtrlFlag.RenderedHtmlCtrlButton, self.renderedHtmlCtrlToggle),
+        # if given object handle(s), get flags
+        if isinstance(buttons, (list, tuple)):
+            buttons = self._getFlags(buttons)
+        if isinstance(buttons, (qt.QWidget, qt.QPushButton)):
+            buttons = self._getFlag(buttons)
+        # check flags
+        for flag in [
+            MarkdownCtrlFlag.RawMarkdownCtrlButton,
+            MarkdownCtrlFlag.RawHtmlCtrlButton,
+            MarkdownCtrlFlag.RenderedHtmlCtrlButton,
         ]:
-            if flag in flags and visibility:
+            if flag in buttons and visibility:
                 # if visibility is True, show corresponding component
-                btn.show()
-            elif flag in flags:
+                self.getButton(flag).show()
+            elif flag in buttons:
                 # if False, hide the corresponding button
-                btn.hide()
+                self.getButton(flag).hide()
 
     
-    def setButtonStyle(self, style, flags=MarkdownCtrlFlag.AllCtrlButtons):
+    def setButtonStyle(self, style, buttons=MarkdownCtrlFlag.AllCtrlButtons):
         """
         """
-        for flag, btn in [
-            (MarkdownCtrlFlag.RawMarkdownCtrlButton, self.rawMarkdownCtrlToggle),
-            (MarkdownCtrlFlag.RawHtmlCtrlButton, self.rawHtmlCtrlToggle),
-            (MarkdownCtrlFlag.RenderedHtmlCtrlButton, self.renderedHtmlCtrlToggle),
+        # if given object handle(s), get flags
+        if isinstance(buttons, (list, tuple)):
+            buttons = self._getFlags(buttons)
+        if isinstance(buttons, (qt.QWidget, qt.QPushButton)):
+            buttons = self._getFlag(buttons)
+        # check flags
+        for flag in [
+            MarkdownCtrlFlag.RawMarkdownCtrlButton, MarkdownCtrlFlag.RawMarkdownCtrl,
+            MarkdownCtrlFlag.RawHtmlCtrlButton, MarkdownCtrlFlag.RawHtmlCtrl,
+            MarkdownCtrlFlag.RenderedHtmlCtrlButton, MarkdownCtrlFlag.RenderedHtmlCtrl,
         ]:
-            if flag in flags:
-                # if visibility is True, show corresponding component
-                btn.setStyle(style)
+            if flag in buttons:
+                # if visibility is True, style corresponding button
+                self.getButton(flag).setStyle(style)
     
     def setButtonsPosition(self, pos):
         """
