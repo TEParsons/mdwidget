@@ -246,7 +246,6 @@ class MarkdownCtrl(qt.QWidget):
             elif flag in buttons:
                 # if False, hide the corresponding button
                 self.getButton(flag).hide()
-
     
     def setButtonStyle(self, style, buttons=MarkdownCtrlFlag.AllCtrlButtons):
         """
@@ -265,6 +264,25 @@ class MarkdownCtrl(qt.QWidget):
             if flag in buttons:
                 # if visibility is True, style corresponding button
                 self.getButton(flag).setStyle(style)
+    
+    def setButtonIcon(self, icon, buttons=MarkdownCtrlFlag.AllCtrlButtons):
+        """
+        """
+        # check flags
+        for flag in [
+            MarkdownCtrlFlag.RawMarkdownCtrlButton, MarkdownCtrlFlag.RawMarkdownCtrl,
+            MarkdownCtrlFlag.RawHtmlCtrlButton, MarkdownCtrlFlag.RawHtmlCtrl,
+            MarkdownCtrlFlag.RenderedHtmlCtrlButton, MarkdownCtrlFlag.RenderedHtmlCtrl,
+        ]:
+            if flag in buttons:
+                # get button
+                btn = self.getButton(flag)
+                # if icon is a string or Path, load from file
+                if isinstance(icon, (str, Path)):
+                    icon = gui.QIcon(str(icon))
+                # set icon
+                btn._icon = icon
+                btn.setIcon(btn._icon)
     
     def setButtonsPosition(self, pos):
         """
