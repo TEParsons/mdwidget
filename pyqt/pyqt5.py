@@ -19,6 +19,9 @@ class MarkdownCtrlFlag(enum.Flag):
     RawHtmlCtrl = enum.auto()
     RenderedHtmlCtrl = enum.auto()
     AllCtrls = RawMarkdownCtrl | RawHtmlCtrl | RenderedHtmlCtrl
+    # view exclusivity options
+    SingleCtrl = enum.auto()
+    MultipleCtrl = enum.auto()
     # identifiers for toggle buttons
     RawMarkdownCtrlButton = enum.auto()
     RawHtmlCtrlButton = enum.auto()
@@ -40,7 +43,7 @@ class MarkdownCtrlFlag(enum.Flag):
 
     # default style
     Default = (
-        RawMarkdownCtrl | RenderedHtmlCtrl | 
+        MultipleCtrl | RawMarkdownCtrl | RenderedHtmlCtrl | 
         RawMarkdownCtrlButton | RenderedHtmlCtrlButton | 
         BottomButtonsArea | AlignButtonsCenter | ButtonIconOnly
     )
@@ -184,11 +187,21 @@ class MarkdownCtrl(qt.QWidget):
         self.setButtonsPosition(flags)        
         # set button alignment
         self.setButtonsAlignment(flags)
+        # set visibility exclusivity
+        self.setMultipleCtrl(flags)
         # remove all bespoke flags
         for attr in dir(MarkdownCtrlFlag):
             flag = getattr(MarkdownCtrlFlag, attr)
             if isinstance(flag, enum.Flag):
                 flags &= flag
+    
+    def setMultipleCtrl(self, multi=True):
+        """
+        """
+        self.viewToggleCtrl.setMultipleSelection(multi)
+    
+    def setSingleCtrl(self):
+        self.setMultipleCtrl(False)
     
     def setCtrlVisibility(self, visibility, ctrls=MarkdownCtrlFlag.AllCtrls):
         """
@@ -312,13 +325,26 @@ class ViewToggleCtrl(qt.QWidget):
                     self.setIcon(icon)
                     self.setText(text)
         
-        def onClick(self, evt=None):
-            if self.isChecked():
-                self.ctrl.show()
+        def onClick(self, evt=None, recursive=True):
+            if self.parent.multipleSelection:
+                # if parent allows multiselect, do simple show/hide
+                if self.isChecked():
+                    self.ctrl.show()
+                else:
+                    self.ctrl.hide()
+            elif self.isChecked():
+                # get index
+                i = self.parent.btns.index(self)
+                # create values array
+                values = [False] * len(self.parent.btns)
+                values[i] = True
+                # set from parent
+                self.parent.setValues(values)
             else:
-                self.ctrl.hide()
+                # if deselecting in single select mode, reselect
+                self.setChecked(True)        
            
-    def __init__(self, parent):
+    def __init__(self, parent, multi=True):
         # initialise
         qt.QWidget.__init__(self, parent)
         self.parent = parent
@@ -327,6 +353,8 @@ class ViewToggleCtrl(qt.QWidget):
         self.sizer.setAlignment(util.Qt.AlignCenter)
         # array for buttons
         self.btns = []
+        # set multiple select
+        self.setMultipleSelection(multi)
     
     def addButton(self, ctrl, iconName=None, label=""):
         # make button
@@ -337,6 +365,17 @@ class ViewToggleCtrl(qt.QWidget):
         self.sizer.addWidget(btn)
 
         return btn
+
+    def setMultipleSelection(self, multi=True):
+        # convert to boolean if using flags
+        if not isinstance(multi, bool) and MarkdownCtrlFlag.MultipleCtrl in multi:
+            multi = True
+        if not isinstance(multi, bool) and MarkdownCtrlFlag.SingleCtrl in multi:
+            multi = False 
+        # set
+        self.multipleSelection = multi
+        # set values again (so limiting happens)
+        self.setValues(self.getValues())
     
     def setValues(self, values):
         # if given a single bool, make iterable
@@ -346,10 +385,26 @@ class ViewToggleCtrl(qt.QWidget):
         if len(values) == 1:
             values = values * len(self.btns)
         assert len(values) == len(self.btns), "When setting values for ViewToggle, there must be the same number of values as there are buttons."
+        # if multiple selection is disabled, only take first button
+        if not self.multipleSelection and True in values:
+            i = values.index(True)
+            values = [False] * len(self.btns)
+            values[i] = True
         # set each button in order
         for btn, val in zip(self.btns, values):
             btn.setChecked(val)
-            btn.onClick()
+            # show/hide ctrl as appropriate
+            if btn.isChecked():
+                btn.ctrl.show()
+            else:
+                btn.ctrl.hide()
+    
+    def getValues(self):
+        values = []
+        for btn in self.btns:
+            values.append(btn.isChecked())
+        
+        return values
     
     def setVisibility(self, visible):
         # if given a single bool, make iterable
