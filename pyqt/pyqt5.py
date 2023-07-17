@@ -22,12 +22,12 @@ class MarkdownCtrl(qt.QWidget):
         RenderedHtmlCtrl = enum.auto()
         AllCtrls = RawMarkdownCtrl | RawHtmlCtrl | RenderedHtmlCtrl
     
-    class ViewModeFlag(enum.Flag):
-        # view exclusivity options
-        SingleCtrl = enum.auto()
-        MultipleCtrl = enum.auto()
-    
     class ButtonStyleFlag(enum.Flag):
+        ButtonsShown = enum.auto()
+        ButtonsHidden = enum.auto()
+        # view modes
+        SingleSelect = enum.auto()
+        MultipleSelect = enum.auto()
         # button style options
         ButtonIconOnly = enum.auto()
         ButtonTextOnly = enum.auto()
@@ -44,9 +44,10 @@ class MarkdownCtrl(qt.QWidget):
 
     def __init__(
             self, parent, interpreter=None, 
-            minCtrlSize=(256, 256), viewMode=ViewModeFlag.MultipleCtrl,
+            minCtrlSize=(256, 256),
             showCtrls=IdentifierFlag.RawMarkdownCtrl | IdentifierFlag.RenderedHtmlCtrl,
             buttonStyle=(
+                ButtonStyleFlag.ButtonsShown | ButtonStyleFlag.MultipleSelect | 
                 ButtonStyleFlag.BottomButtonsArea | ButtonStyleFlag.AlignButtonsCenter | ButtonStyleFlag.ButtonIconOnly
             )
         ):
@@ -92,7 +93,6 @@ class MarkdownCtrl(qt.QWidget):
         self.rawMarkdownCtrl.textChanged.connect(self.renderHTML)
 
         # set flags
-        self.setMultipleCtrl(viewMode)
         # set ctrl visibility
         self.setCtrlVisibility(False)
         self.setCtrlVisibility(True, ctrls=showCtrls)
@@ -100,6 +100,7 @@ class MarkdownCtrl(qt.QWidget):
         self.setButtonVisibility(False)
         self.setButtonVisibility(True, buttons=showCtrls)
         # set button style
+        self.setMultipleCtrl(buttonStyle)
         self.setButtonStyle(buttonStyle, buttons=self.IdentifierFlag.AllCtrls)
         self.setButtonsPosition(buttonStyle)        
         self.setButtonsAlignment(buttonStyle)
@@ -316,6 +317,8 @@ class ViewToggleCtrl(qt.QWidget):
                 if flag in style:
                     self.setIcon(icon)
                     self.setText(text)
+            if style | MarkdownCtrl.ButtonStyleFlag.ButtonsHidden:
+                self.hide()
         
         def onClick(self, evt=None, recursive=True):
             if self.parent.multipleSelection:
@@ -360,9 +363,9 @@ class ViewToggleCtrl(qt.QWidget):
 
     def setMultipleSelection(self, multi=True):
         # convert to boolean if using flags
-        if not isinstance(multi, bool) and MarkdownCtrl.ViewModeFlag.MultipleCtrl in multi:
+        if not isinstance(multi, bool) and MarkdownCtrl.ButtonStyleFlag.MultipleSelect in multi:
             multi = True
-        if not isinstance(multi, bool) and MarkdownCtrl.ViewModeFlag.SingleCtrl in multi:
+        if not isinstance(multi, bool) and MarkdownCtrl.ButtonStyleFlag.SingleSelect in multi:
             multi = False 
         # set
         self.multipleSelection = multi
