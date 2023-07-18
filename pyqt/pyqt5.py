@@ -174,22 +174,6 @@ class MarkdownCtrl(qt.QWidget):
         if flag in self._btns:
             return self._btns[flag]
     
-    def _getFlags(self, objs):
-        """
-        """
-        flag = self._getFlag(objs[0])
-        for obj in objs:
-            flag |= self._getFlag(obj)
-        
-        return flag
-    
-    def _getFlag(self, obj):
-        """
-        """
-        for flag, thisObj in self._ctrls.items():
-            if thisObj == flag:
-                return flag    
-    
     def setSelectionMode(self, mode=True):
         """
         """
@@ -241,11 +225,6 @@ class MarkdownCtrl(qt.QWidget):
     def setButtonStyle(self, style, buttons=IdentifierFlag.AllCtrls):
         """
         """
-        # if given object handle(s), get flags
-        if isinstance(buttons, (list, tuple)):
-            buttons = self._getFlags(buttons)
-        if isinstance(buttons, (qt.QWidget, qt.QPushButton)):
-            buttons = self._getFlag(buttons)
         # check flags
         for flag in [
             self.IdentifierFlag.RawMarkdownCtrl,
