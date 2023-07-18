@@ -46,7 +46,7 @@ class MarkdownCtrl(qt.QWidget):
     def __init__(
             self, parent, interpreter=None, 
             minCtrlSize=(256, 256),
-            showCtrls=IdentifierFlag.RawMarkdownCtrl | IdentifierFlag.RenderedHtmlCtrl | IdentifierFlag.ViewSwitcherCtrl,
+            ctrls=IdentifierFlag.RawMarkdownCtrl | IdentifierFlag.RenderedHtmlCtrl | IdentifierFlag.ViewSwitcherCtrl,
             selectionMode=SelectionMode.MultiSelection,
             buttonStyle=ButtonStyleFlag.ButtonIconOnly | ButtonStyleFlag.BottomButtonsArea | ButtonStyleFlag.AlignButtonsCenter
         ):
@@ -71,7 +71,7 @@ class MarkdownCtrl(qt.QWidget):
         
         # add raw markdown ctrl
         rawMarkdownCtrl = self._ctrls[self.IdentifierFlag.RawMarkdownCtrl] = StyledTextCtrl(self, language="markdown", minSize=minCtrlSize)
-        rawMarkdownCtrl.textChanged.connect(self.renderHTML)
+        rawMarkdownCtrl.textChanged.connect(self.onSetMarkdownText)
         ctrlsPanel.addWidget(rawMarkdownCtrl)
 
         # add raw html ctrl
@@ -86,41 +86,81 @@ class MarkdownCtrl(qt.QWidget):
         # add view toggle ctrl
         viewSwitcherCtrl = self._ctrls[self.IdentifierFlag.ViewSwitcherCtrl] = ViewToggleCtrl(self)
         self.sizer.addWidget(viewSwitcherCtrl)
+        self._btns = {}
 
         # add buttons
-        self.rawMarkdownCtrlToggle = viewSwitcherCtrl.addButton(ctrl=rawMarkdownCtrl, iconName="view_md", label="Markdown code")
-        self.rawHtmlCtrlToggle = viewSwitcherCtrl.addButton(ctrl=rawHtmlCtrl, iconName="view_html", label="HTML code")
-        self.renderedHtmlCtrlToggle = viewSwitcherCtrl.addButton(ctrl=renderedHtmlCtrl, iconName="view_preview", label="HTML preview")
+        self._btns[self.IdentifierFlag.RawMarkdownCtrl] = viewSwitcherCtrl.addButton(ctrl=rawMarkdownCtrl, iconName="view_md", label="Markdown code")
+        self._btns[self.IdentifierFlag.RawHtmlCtrl] = viewSwitcherCtrl.addButton(ctrl=rawHtmlCtrl, iconName="view_html", label="HTML code")
+        self._btns[self.IdentifierFlag.RenderedHtmlCtrl] = viewSwitcherCtrl.addButton(ctrl=renderedHtmlCtrl, iconName="view_preview", label="HTML preview")
 
         # set ctrl visibility
-        self.setCtrlVisibility(False)
-        self.setCtrlVisibility(True, ctrls=showCtrls)
+        self.setCtrls(ctrls)
         # set button visibility
-        self.setButtons(showCtrls)
+        self.setButtons(ctrls)
         # set selection mode
         self.setSelectionMode(selectionMode)
         # set button style
         self.setButtonStyle(buttonStyle, buttons=self.IdentifierFlag.AllCtrls)
-        self.setButtonsPosition(buttonStyle)        
+        self.setButtonsPosition(buttonStyle)
         self.setButtonsAlignment(buttonStyle)
     
-    def renderHTML(self, event=None):
+    def getMarkdownText(self):
+        # get markdown ctrl
+        ctrl = self.getCtrl(self.IdentifierFlag.RawMarkdownCtrl)
+        # get content
+        return ctrl.toPlainText()
+
+    def setMarkdownText(self):
+        # get markdown ctrl
+        ctrl = self.getCtrl(self.IdentifierFlag.RawMarkdownCtrl)
+        # set content
+        ctrl.setPlainText(ctrl)
+    
+    def onSetMarkdownText(self, evt=None):
+        # get HTML body
+        htmlBody = self.getHtmlBody()
+        # populate raw HTML ctrl
+        rawHtmlCtrl = self.getCtrl(self.IdentifierFlag.RawHtmlCtrl)
+        rawHtmlCtrl.setPlainText(htmlBody)
+        # get full HTML
+        htmlFull = self.getHtml()
+        # populate rendered HTML ctrl
+        renderedHtmlCtrl = self.getCtrl(self.IdentifierFlag.RenderedHtmlCtrl)
+        renderedHtmlCtrl.setHtml(htmlFull)
+    
+    def getHtmlBody(self):
         # get markdown
-        mdContent = self.getCtrl(self.IdentifierFlag.RawMarkdownCtrl).toPlainText()
+        mdContent = self.getMarkdownText()
         # parse to HTML
         try:
             htmlContent = self.interpreter.convert(mdContent)
         except Exception as err:
+            # on fail, return error as HTML
             tb = "\n".join(traceback.format_exception(err))
             htmlContent = (
                 f"<h1>Error</h1>\n"
                 f"<p>Could not parse Markdown. Error from Python:</p>\n"
                 f"<pre><code>{tb}</code></pre>\n"
                 )
-        # apply to HTML ctrl
-        self.rawHTMLCtrl.setPlainText(htmlContent)
-        # apply to HTML viewer
-        self.renderedHTMLCtrl.setBody(htmlContent)
+        
+        return htmlContent
+
+    def getHtml(self):
+        # get html body
+        htmlBody = self.getHtmlBody()
+        # construct full html
+        htmlFull = (
+            f"<head>\n"
+            f"<style>\n"
+            f"{viewerTheme}\n"
+            f"</style>\n"
+            f"</head>\n"
+            f"<body>\n"
+            f"{htmlBody}\n"
+            f"</body>"
+        )
+        
+        return htmlFull
     
     def getCtrl(self, flag):
         """
@@ -131,13 +171,8 @@ class MarkdownCtrl(qt.QWidget):
     def getButton(self, flag):
         """
         """
-        for thisFlag, btn in [
-            (self.IdentifierFlag.RawMarkdownCtrl, self.rawMarkdownCtrlToggle),
-            (self.IdentifierFlag.RawHtmlCtrl, self.rawHtmlCtrlToggle),
-            (self.IdentifierFlag.RenderedHtmlCtrl, self.renderedHtmlCtrlToggle),
-        ]:
-            if thisFlag == flag:
-                return btn
+        if flag in self._btns:
+            return self._btns[flag]
     
     def _getFlags(self, objs):
         """
@@ -169,46 +204,22 @@ class MarkdownCtrl(qt.QWidget):
             MarkdownCtrl.IdentifierFlag.RenderedHtmlCtrl,
             MarkdownCtrl.IdentifierFlag.ViewSwitcherCtrl,
         ]:
+            ctrl = self.getCtrl(flag)
+            btn = self.getButton(flag)
             if flag in ctrls:
                 # if visibility is True, show corresponding component
-                self.getCtrl(flag).show()
-                self.getButton(flag).setChecked(True)
+                ctrl.show()
+                if btn is not None:
+                    btn.setChecked(True)
             else:
                 # if False, hide the corresponding button
-                self.getCtrl(flag).hide()
-                self.getButton(flag).setChecked(False)
-    
-    def setCtrlVisibility(self, visibility, ctrls=IdentifierFlag.AllCtrls):
-        """
-        """
-        # if given object handle(s), get flags
-        if isinstance(ctrls, (list, tuple)):
-            ctrls = self._getFlags(ctrls)
-        if isinstance(ctrls, (qt.QWidget, qt.QPushButton)):
-            ctrls = self._getFlag(ctrls)
-        # check flags
-        for flag in [
-            self.IdentifierFlag.RawMarkdownCtrl,
-            self.IdentifierFlag.RawHtmlCtrl,
-            self.IdentifierFlag.RenderedHtmlCtrl,
-        ]:
-            if flag in ctrls and visibility:
-                # if flag is present, show the corresponding ctrl (setting its button to True)
-                self.getCtrl(flag).show()
-                self.getButton(flag).setChecked(True)
-            elif flag in ctrls:
-                # otherwise, hide the corresponding ctrl (setting its button to False)
-                self.getCtrl(flag).hide()
-                self.getButton(flag).setChecked(False)
+                ctrl.hide()
+                if btn is not None:
+                    btn.setChecked(False)
     
     def setButtons(self, buttons):
         """
         """
-        # if given object handle(s), get flags
-        if isinstance(buttons, (list, tuple)):
-            buttons = self._getFlags(buttons)
-        if isinstance(buttons, (qt.QWidget, qt.QPushButton)):
-            buttons = self._getFlag(buttons)
         # check flags
         for flag in [
             MarkdownCtrl.IdentifierFlag.RawMarkdownCtrl,
@@ -489,42 +500,14 @@ class HTMLPreviewCtrl(html.QWebEngineView):
         self.parent = parent
         # set minimum size
         self.setMinimumSize(*minSize)
-        # start off with no content
-        self._body = ""
     
-    def refresh(self, event=None):
-        self.setBody(self.getBody())
-
-    def setBody(self, content:str, filename:Path=None):
-        # store just body
-        self._body = content
-        # construct full HTML
-        content_html = (
-            f"<head>\n"
-            f"<style>\n"
-            f"{viewerTheme}\n"
-            f"</style>\n"
-            f"</head>\n"
-            f"<body>\n"
-            f"{content}\n"
-            f"</body>"
-        )
+    def setHtml(self, content, filename=None):
         # if not given a filename, use assets folder
         if filename is None:
             filename = Path(__file__).parent.parent / "assets" / "untitled.html"
         # enforce html extension
-            filename = filename.parent / (filename.stem + ".html")
+        filename = filename.parent / (filename.stem + ".html")
         # get base url
         base_url = util.QUrl.fromLocalFile(str(filename))
         # set HTML
-        self.setHtml(content_html, base_url)
-    
-    def getBody(self):
-        return self._body
-    
-    def showEvent(self, event):
-        self.refresh()
-        return html.QWebEngineView.showEvent(self, event)
-    
-    def hideEvent(self, event):
-        return html.QWebEngineView.hideEvent(self, event)
+        html.QWebEngineView.setHtml(self, content, base_url)
