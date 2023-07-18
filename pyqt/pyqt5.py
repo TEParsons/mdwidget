@@ -15,17 +15,16 @@ from ..assets import folder as assetsFolder
 
 class MarkdownCtrl(qt.QWidget):
     class SelectionMode(enum.Flag):
-        NoSelection = enum.auto()
         SingleSelection = enum.auto()
         MultiSelection = enum.auto()
     
-    class IdentifierFlag(enum.Flag):
+    class IdentifierFlag(enum.IntFlag):
         # identifiers for controls
         RawMarkdownCtrl = enum.auto()
         RawHtmlCtrl = enum.auto()
         RenderedHtmlCtrl = enum.auto()
         AllCtrls = RawMarkdownCtrl | RawHtmlCtrl | RenderedHtmlCtrl
-        # identifiers for button area
+        # identifier for button area
         ViewSwitcherCtrl = enum.auto()
     
     class ButtonStyleFlag(enum.Flag):
@@ -47,7 +46,7 @@ class MarkdownCtrl(qt.QWidget):
             self, parent, interpreter=None, 
             minCtrlSize=(256, 256),
             ctrls=IdentifierFlag.RawMarkdownCtrl | IdentifierFlag.RenderedHtmlCtrl | IdentifierFlag.ViewSwitcherCtrl,
-            selectionMode=SelectionMode.MultiSelection,
+            buttons=IdentifierFlag.RawMarkdownCtrl | IdentifierFlag.RenderedHtmlCtrl,
             buttonStyle=ButtonStyleFlag.ButtonIconOnly | ButtonStyleFlag.BottomButtonsArea | ButtonStyleFlag.AlignButtonsCenter
         ):
         # initialise
@@ -68,37 +67,45 @@ class MarkdownCtrl(qt.QWidget):
         ctrlsPanel.setChildrenCollapsible(False)
         self.sizer.addWidget(ctrlsPanel, stretch=1)
         self._ctrls = {}
+
+        # add view toggle ctrl
+        viewSwitcherCtrl = self._ctrls[self.IdentifierFlag.ViewSwitcherCtrl] =qt.QWidget()
+        viewSwitcherCtrl.sizer = qt.QHBoxLayout(viewSwitcherCtrl)
+        self.sizer.addWidget(viewSwitcherCtrl)
+        self._btns = qt.QButtonGroup(self)
         
         # add raw markdown ctrl
         rawMarkdownCtrl = self._ctrls[self.IdentifierFlag.RawMarkdownCtrl] = StyledTextCtrl(self, language="markdown", minSize=minCtrlSize)
         rawMarkdownCtrl.textChanged.connect(self.onSetMarkdownText)
         ctrlsPanel.addWidget(rawMarkdownCtrl)
+        # add view toggle button
+        rawMarkdownBtn = ViewToggleButton(viewSwitcherCtrl, iconName="view_md", label="Markdown code")
+        rawMarkdownBtn.clicked.connect(self.onViewSwitcherButtonClicked)
+        viewSwitcherCtrl.sizer.addWidget(rawMarkdownBtn)
+        self._btns.addButton(rawMarkdownBtn, id=self.IdentifierFlag.RawMarkdownCtrl)
 
         # add raw html ctrl
         rawHtmlCtrl = self._ctrls[self.IdentifierFlag.RawHtmlCtrl] = StyledTextCtrl(self, language="html", minSize=minCtrlSize)
         rawHtmlCtrl.setReadOnly(True)
         ctrlsPanel.addWidget(rawHtmlCtrl)
+        # add view toggle button
+        rawHtmlBtn = ViewToggleButton(viewSwitcherCtrl, iconName="view_html", label="HTML code")
+        rawHtmlBtn.clicked.connect(self.onViewSwitcherButtonClicked)
+        viewSwitcherCtrl.sizer.addWidget(rawHtmlBtn)
+        self._btns.addButton(rawHtmlBtn, id=self.IdentifierFlag.RawHtmlCtrl)
 
         # add rendered HTML ctrl
         renderedHtmlCtrl = self._ctrls[self.IdentifierFlag.RenderedHtmlCtrl] = HTMLPreviewCtrl(self, minSize=minCtrlSize)
         ctrlsPanel.addWidget(renderedHtmlCtrl)
-
-        # add view toggle ctrl
-        viewSwitcherCtrl = self._ctrls[self.IdentifierFlag.ViewSwitcherCtrl] = ViewToggleCtrl(self)
-        self.sizer.addWidget(viewSwitcherCtrl)
-        self._btns = {}
-
-        # add buttons
-        self._btns[self.IdentifierFlag.RawMarkdownCtrl] = viewSwitcherCtrl.addButton(ctrl=rawMarkdownCtrl, iconName="view_md", label="Markdown code")
-        self._btns[self.IdentifierFlag.RawHtmlCtrl] = viewSwitcherCtrl.addButton(ctrl=rawHtmlCtrl, iconName="view_html", label="HTML code")
-        self._btns[self.IdentifierFlag.RenderedHtmlCtrl] = viewSwitcherCtrl.addButton(ctrl=renderedHtmlCtrl, iconName="view_preview", label="HTML preview")
+        # add view toggle button
+        renderedHtmlBtn = ViewToggleButton(viewSwitcherCtrl, iconName="view_preview", label="HTML preview")
+        renderedHtmlBtn.clicked.connect(self.onViewSwitcherButtonClicked)
+        viewSwitcherCtrl.sizer.addWidget(renderedHtmlBtn)
+        self._btns.addButton(renderedHtmlBtn, id=self.IdentifierFlag.RenderedHtmlCtrl)
 
         # set ctrl visibility
         self.setCtrls(ctrls)
-        # set button visibility
-        self.setButtons(ctrls)
-        # set selection mode
-        self.setSelectionMode(selectionMode)
+        self.setButtons(buttons)
         # set button style
         self.setButtonStyle(buttonStyle, buttons=self.IdentifierFlag.AllCtrls)
         self.setButtonsPosition(buttonStyle)
@@ -145,6 +152,21 @@ class MarkdownCtrl(qt.QWidget):
         
         return htmlContent
 
+    def onViewSwitcherButtonClicked(self, evt=None):
+        for flag in (
+            MarkdownCtrl.IdentifierFlag.RawMarkdownCtrl,
+            MarkdownCtrl.IdentifierFlag.RawHtmlCtrl,
+            MarkdownCtrl.IdentifierFlag.RenderedHtmlCtrl,
+        ):
+            # get ctrl and button
+            ctrl = self.getCtrl(flag)
+            btn = self.getButton(flag)
+            # align ctrl to button state
+            if btn.isVisible() and btn.isChecked():
+                ctrl.show()
+            else:
+                ctrl.hide()
+
     def getHtml(self):
         # get html body
         htmlBody = self.getHtmlBody()
@@ -171,14 +193,17 @@ class MarkdownCtrl(qt.QWidget):
     def getButton(self, flag):
         """
         """
-        if flag in self._btns:
-            return self._btns[flag]
+        return self._btns.button(flag)
     
-    def setSelectionMode(self, mode=True):
+    def setSelectionMode(self, mode):
         """
         """
-        viewSwitcherCtrl = self.getCtrl(self.IdentifierFlag.ViewSwitcherCtrl)
-        viewSwitcherCtrl.setSelectionMode(mode)
+        if mode == self.SelectionMode.SingleSelection:
+            self._btns.setExclusive(True)
+        if mode == self.SelectionMode.MultiSelection:
+            self._btns.setExclusive(False)
+        # update ctrl visibility according to pressed
+        self.onViewSwitcherButtonClicked()
     
     def setCtrls(self, ctrls):
         # check flags
@@ -232,8 +257,18 @@ class MarkdownCtrl(qt.QWidget):
             self.IdentifierFlag.RenderedHtmlCtrl,
         ]:
             if flag in buttons:
-                # if visibility is True, style corresponding button
-                self.getButton(flag).setStyle(style)
+                # get corresponding button
+                btn = self.getButton(flag)
+                # apply style
+                if MarkdownCtrl.ButtonStyleFlag.ButtonIconOnly in style:
+                    btn.setIcon(btn._icon)
+                    btn.setText("")
+                elif MarkdownCtrl.ButtonStyleFlag.ButtonTextOnly in style:
+                    btn.setIcon(gui.QIcon())
+                    btn.setText(btn._label)
+                elif MarkdownCtrl.ButtonStyleFlag.ButtonTextOnly in style:
+                    btn.setIcon(btn._icon)
+                    btn.setText(btn._label)
     
     def setButtonIcon(self, icon, buttons=IdentifierFlag.AllCtrls):
         """
@@ -283,141 +318,23 @@ class MarkdownCtrl(qt.QWidget):
                 viewSwitcherCtrl.sizer.setAlignment(sizerFlag)
 
 
-class ViewToggleCtrl(qt.QWidget):  
-    class ViewToggleButton(qt.QPushButton):
-        def __init__(self, parent, ctrl, iconName=None, label=""):
-            # initialise
-            qt.QPushButton.__init__(self, parent)
-            self.parent = parent
-            # make checkable
-            self.setCheckable(True)
-            # connect function
-            self.ctrl = ctrl
-            self.clicked.connect(self.onClick)
-            # set icon
-            if iconName is not None:
-                iconPath = assetsFolder / "icons" / f"{iconName}.svg"
-                self._icon = gui.QIcon(str(iconPath))
-            else:
-                self._icon = gui.QIcon()
-            self.setIcon(self._icon)
-            # set label
-            self._label = label
-            self.setText(label)
-        
-        def setStyle(self, style):
-            for flag, icon, text in [
-                (MarkdownCtrl.ButtonStyleFlag.ButtonIconOnly, self._icon, ""),
-                (MarkdownCtrl.ButtonStyleFlag.ButtonTextOnly, gui.QIcon(), self._label),
-                (MarkdownCtrl.ButtonStyleFlag.ButtonTextBesideIcon, self._icon, self._label),
-            ]:
-                if flag in style:
-                    self.setIcon(icon)
-                    self.setText(text)
-        
-        def onClick(self, evt=None, recursive=True):
-            if self.parent.multipleSelection:
-                # if parent allows multiselect, do simple show/hide
-                if self.isChecked():
-                    self.ctrl.show()
-                else:
-                    self.ctrl.hide()
-            elif self.isChecked():
-                # get index
-                i = self.parent.btns.index(self)
-                # create values array
-                values = [False] * len(self.parent.btns)
-                values[i] = True
-                # set from parent
-                self.parent.setValues(values)
-            else:
-                # if deselecting in single select mode, reselect
-                self.setChecked(True)        
-           
-    def __init__(self, parent):
+class ViewToggleButton(qt.QPushButton):           
+    def __init__(self, parent, iconName=None, label=""):
         # initialise
-        qt.QWidget.__init__(self, parent)
+        qt.QPushButton.__init__(self, parent)
         self.parent = parent
-        # setup layout
-        self.sizer = qt.QBoxLayout(qt.QBoxLayout.LeftToRight, self)
-        self.sizer.setAlignment(util.Qt.AlignCenter)
-        # array for buttons
-        self.btns = []
-    
-    def addButton(self, ctrl, iconName=None, label=""):
-        # make button
-        btn = self.ViewToggleButton(self, ctrl, iconName=iconName, label=label)
-        # store button handle
-        self.btns.append(btn)
-        # add to sizer
-        self.sizer.addWidget(btn)
-
-        return btn
-
-    def setSelectionMode(self, mode):
-        # convert to boolean if using flags
-        if not isinstance(mode, bool) and MarkdownCtrl.SelectionMode.MultiSelection in mode:
-            mode = True
-        if not isinstance(mode, bool) and MarkdownCtrl.SelectionMode.SingleSelection in mode:
-            mode = False 
-        # set
-        self.multipleSelection = mode
-        # set values again (so limiting happens)
-        self.setValues(self.getValues())
-    
-    def setValues(self, values):
-        # if given a single bool, make iterable
-        if isinstance(values, bool):
-            values = (values,)
-        # if single length iterable, fit to length
-        if len(values) == 1:
-            values = values * len(self.btns)
-        assert len(values) == len(self.btns), "When setting values for ViewToggle, there must be the same number of values as there are buttons."
-        # if multiple selection is disabled, only take first button
-        if not self.multipleSelection and True in values:
-            i = values.index(True)
-            values = [False] * len(self.btns)
-            values[i] = True
-        # set each button in order
-        for btn, val in zip(self.btns, values):
-            btn.setChecked(val)
-            # show/hide ctrl as appropriate
-            if btn.isChecked():
-                btn.ctrl.show()
-            else:
-                btn.ctrl.hide()
-    
-    def getValues(self):
-        values = []
-        for btn in self.btns:
-            values.append(btn.isChecked())
-        
-        return values
-    
-    def setVisibility(self, visible):
-        # if given a single bool, make iterable
-        if isinstance(visible, bool):
-            visible = (visible,)
-        # if single length iterable, fit to length
-        if len(visible) == 1:
-            visible = visible * len(self.btns)
-        assert len(visible) == len(self.btns), "When setting visibility for ViewToggle, there must be the same number of values as there are buttons."
-        # set visibility for each button
-        for btn, val in zip(self.btns, visible):
-            if val:
-                btn.show()
-            else:
-                btn.hide()
-        # if entirely hidden, hide panel
-        if any(visible):
-            self.show()
+        self.setCheckable(True)
+        # set label
+        self.setText(label)
+        self._label = label
+        # set icon
+        if iconName is not None:
+            iconPath = assetsFolder / "icons" / f"{iconName}.svg"
+            icon = gui.QIcon(str(iconPath))
         else:
-            self.hide()
-    
-    def setStyle(self, style):
-        self._style = style
-        for btn in self.btns:
-                btn.setStyle(style)
+            icon = gui.QIcon()
+        self.setIcon(icon)
+        self._icon = icon
 
 
 class StyledTextCtrl(qt.QTextEdit):
