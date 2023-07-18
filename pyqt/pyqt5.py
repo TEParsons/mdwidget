@@ -157,7 +157,7 @@ class MarkdownCtrl(qt.QWidget):
             ctrl = self.getCtrl(flag)
             btn = self.getButton(flag)
             # align ctrl to button state
-            if btn.isVisible() and btn.isChecked():
+            if btn.isChecked():
                 ctrl.show()
             else:
                 ctrl.hide()
@@ -241,6 +241,7 @@ class MarkdownCtrl(qt.QWidget):
             else:
                 # if False, hide the corresponding button
                 btn.hide()
+                btn.setChecked(False)
     
     def setView(self, ctrls):
         """
