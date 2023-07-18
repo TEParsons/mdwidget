@@ -106,6 +106,7 @@ class MarkdownCtrl(qt.QWidget):
         # set ctrl visibility
         self.setCtrls(ctrls)
         self.setButtons(buttons)
+        self.setView(ctrls)
         # set button style
         self.setButtonStyle(buttonStyle, buttons=self.IdentifierFlag.AllCtrls)
         self.setButtonsPosition(buttonStyle)
@@ -202,7 +203,7 @@ class MarkdownCtrl(qt.QWidget):
             self._btns.setExclusive(True)
         if mode == self.SelectionMode.MultiSelection:
             self._btns.setExclusive(False)
-        # update ctrl visibility according to pressed
+        # set view to match any change
         self.onViewSwitcherButtonClicked()
     
     def setCtrls(self, ctrls):
@@ -246,6 +247,22 @@ class MarkdownCtrl(qt.QWidget):
             else:
                 # if False, hide the corresponding button
                 btn.hide()
+    
+    def setView(self, ctrls):
+        """
+        """
+        # check flags
+        for flag in [
+            MarkdownCtrl.IdentifierFlag.RawMarkdownCtrl,
+            MarkdownCtrl.IdentifierFlag.RawHtmlCtrl,
+            MarkdownCtrl.IdentifierFlag.RenderedHtmlCtrl,
+        ]:
+            # get corresponding button
+            btn = self.getButton(flag)
+            # check/unecheck button as requested
+            btn.setChecked(flag in ctrls)
+        # refresh ctrls view
+        self.onViewSwitcherButtonClicked()
     
     def setButtonStyle(self, style, buttons=IdentifierFlag.AllCtrls):
         """
