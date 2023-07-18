@@ -1,1 +1,1 @@
-from .catppuccin import LatteStyle as current
+from . import catppuccin

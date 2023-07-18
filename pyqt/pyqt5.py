@@ -8,9 +8,9 @@ import PyQt5.QtWebEngineWidgets as html
 
 from pathlib import Path
 
-from ..themes.editor import current as editorTheme
-from ..themes.viewer import current as viewerTheme
 from ..assets import folder as assetsFolder
+from ..themes import editor as editorThemes
+from ..themes import viewer as viewerThemes
 
 
 class MarkdownCtrl(qt.QWidget):
@@ -165,11 +165,13 @@ class MarkdownCtrl(qt.QWidget):
     def getHtml(self):
         # get html body
         htmlBody = self.getHtmlBody()
+        # get theme
+        theme = self.getCtrl(self.CtrlFlag.RenderedHtmlCtrl).theme
         # construct full html
         htmlFull = (
             f"<head>\n"
             f"<style>\n"
-            f"{viewerTheme}\n"
+            f"{theme}\n"
             f"</style>\n"
             f"</head>\n"
             f"<body>\n"
@@ -259,6 +261,26 @@ class MarkdownCtrl(qt.QWidget):
         # refresh ctrls view
         self.onViewSwitcherButtonClicked()
     
+    def setTheme(self, theme, ctrl):
+        """
+        """
+        # check ctrl flags
+        for flag in [
+            MarkdownCtrl.CtrlFlag.RawMarkdownCtrl,
+            MarkdownCtrl.CtrlFlag.RawHtmlCtrl,
+            MarkdownCtrl.CtrlFlag.RenderedHtmlCtrl,
+        ]:
+            if flag in ctrl:
+                # get ctrl
+                ctrl = self.getCtrl(flag)
+                # set theme
+                ctrl.theme = theme
+                # restyle
+                if isinstance(ctrl, StyledTextCtrl):
+                    ctrl.styleText()
+                if isinstance(ctrl, HTMLPreviewCtrl):
+                    ctrl.setHtml(self.getHtml())
+    
     def setButtonStyle(self, style, buttons=CtrlFlag.AllCtrls):
         """
         """
@@ -347,6 +369,8 @@ class ViewToggleButton(qt.QPushButton):
 
 
 class StyledTextCtrl(qt.QTextEdit):
+    theme = editorThemes.catppuccin.LatteStyle
+
     def __init__(self, parent, language, minSize=(256, 256)):
         # initialise
         qt.QTextEdit.__init__(self)
@@ -371,10 +395,10 @@ class StyledTextCtrl(qt.QTextEdit):
         cursor = gui.QTextCursor(self.document())
         # set base style
         self.setStyleSheet(
-            f"background-color: {editorTheme.background_color};"
+            f"background-color: {self.theme.background_color};"
             f"font-family: JetBrains Mono, Noto Emoji;"
             f"font-size: 10pt;"
-            f"border: 1px solid {editorTheme.line_number_background_color};"
+            f"border: 1px solid {self.theme.line_number_background_color};"
         )
         # lex content to get tokens
         tokens = pygments.lex(self.toPlainText(), lexer=self.lexer)
@@ -382,7 +406,7 @@ class StyledTextCtrl(qt.QTextEdit):
         i = 0
         for token, text in tokens:
             # get style for this token
-            token_style = editorTheme.style_for_token(token)
+            token_style = self.theme.style_for_token(token)
             # create format object
             char_format = gui.QTextCharFormat()
             char_format.setFontFamily("JetBrains Mono")
@@ -404,6 +428,8 @@ class StyledTextCtrl(qt.QTextEdit):
 
 
 class HTMLPreviewCtrl(html.QWebEngineView):
+    theme = viewerThemes.catppuccin.LatteStyle
+
     def __init__(self, parent, minSize=(256, 256)):
         # initalise
         html.QWebEngineView.__init__(self)
