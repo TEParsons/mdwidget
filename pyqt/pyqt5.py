@@ -204,15 +204,17 @@ class MarkdownCtrl(qt.QWidget):
             MarkdownCtrl.IdentifierFlag.RenderedHtmlCtrl,
             MarkdownCtrl.IdentifierFlag.ViewSwitcherCtrl,
         ]:
+            # get ctrl and associated button
             ctrl = self.getCtrl(flag)
             btn = self.getButton(flag)
+
             if flag in ctrls:
                 # if visibility is True, show corresponding component
                 ctrl.show()
                 if btn is not None:
                     btn.setChecked(True)
             else:
-                # if False, hide the corresponding button
+                # if False, hide the corresponding component
                 ctrl.hide()
                 if btn is not None:
                     btn.setChecked(False)
@@ -226,12 +228,15 @@ class MarkdownCtrl(qt.QWidget):
             MarkdownCtrl.IdentifierFlag.RawHtmlCtrl,
             MarkdownCtrl.IdentifierFlag.RenderedHtmlCtrl,
         ]:
+            # get corresponding button
+            btn = self.getButton(flag)
+
             if flag in buttons:
-                # if visibility is True, show corresponding component
-                self.getButton(flag).show()
+                # if visibility is True, show corresponding button
+                btn.show()
             else:
                 # if False, hide the corresponding button
-                self.getButton(flag).hide()
+                btn.hide()
     
     def setButtonStyle(self, style, buttons=IdentifierFlag.AllCtrls):
         """
