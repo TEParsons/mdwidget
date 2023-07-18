@@ -272,14 +272,14 @@ class MarkdownCtrl(qt.QWidget):
         ]:
             if flag in ctrl:
                 # get ctrl
-                ctrl = self.getCtrl(flag)
+                thisCtrl = self.getCtrl(flag)
                 # set theme
-                ctrl.theme = theme
+                thisCtrl.theme = theme
                 # restyle
                 if isinstance(ctrl, StyledTextCtrl):
-                    ctrl.styleText()
+                    thisCtrl.styleText()
                 if isinstance(ctrl, HTMLPreviewCtrl):
-                    ctrl.setHtml(self.getHtml())
+                    thisCtrl.setHtml(self.getHtml())
     
     def setButtonStyle(self, style, buttons=CtrlFlag.AllCtrls):
         """
