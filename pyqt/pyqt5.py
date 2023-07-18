@@ -395,7 +395,7 @@ class StyledTextCtrl(qt.QTextEdit):
         cursor = gui.QTextCursor(self.document())
         # make sure there's a font family
         if not hasattr(self.theme, "font_family"):
-            self.theme.font_family = "JetBrains Mono, Noto Emoji"
+            self.theme.font_family = "monospace"
         # set base style
         self.setStyleSheet(
             f"background-color: {self.theme.background_color};"
