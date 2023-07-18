@@ -32,6 +32,8 @@ class MarkdownCtrl(qt.QWidget):
         ButtonIconOnly = enum.auto()
         ButtonTextOnly = enum.auto()
         ButtonTextBesideIcon = enum.auto()
+    
+    class ButtonLayoutFlag(enum.Flag):
         # button position options
         LeftButtonsArea = enum.auto()
         RightButtonsArea = enum.auto()
@@ -44,10 +46,7 @@ class MarkdownCtrl(qt.QWidget):
 
     def __init__(
             self, parent, interpreter=None, 
-            minCtrlSize=(256, 256),
-            ctrls=IdentifierFlag.RawMarkdownCtrl | IdentifierFlag.RenderedHtmlCtrl | IdentifierFlag.ViewSwitcherCtrl,
-            buttons=IdentifierFlag.RawMarkdownCtrl | IdentifierFlag.RenderedHtmlCtrl,
-            buttonStyle=ButtonStyleFlag.ButtonIconOnly | ButtonStyleFlag.BottomButtonsArea | ButtonStyleFlag.AlignButtonsCenter
+            minCtrlSize=(256, 256)
         ):
         # initialise
         qt.QWidget.__init__(self, parent)
@@ -103,14 +102,9 @@ class MarkdownCtrl(qt.QWidget):
         viewSwitcherCtrl.sizer.addWidget(renderedHtmlBtn)
         self._btns.addButton(renderedHtmlBtn, id=self.IdentifierFlag.RenderedHtmlCtrl)
 
-        # set ctrl visibility
-        self.setCtrls(ctrls)
-        self.setButtons(buttons)
-        self.setView(ctrls)
-        # set button style
-        self.setButtonStyle(buttonStyle, buttons=self.IdentifierFlag.AllCtrls)
-        self.setButtonsPosition(buttonStyle)
-        self.setButtonsAlignment(buttonStyle)
+        # set default style
+        self.setSelectionMode(self.SelectionMode.MultiSelection)
+        self.setView(self.IdentifierFlag.AllCtrls)
     
     def getMarkdownText(self):
         # get markdown ctrl
@@ -306,31 +300,28 @@ class MarkdownCtrl(qt.QWidget):
                 btn._icon = icon
                 btn.setIcon(btn._icon)
     
-    def setButtonsPosition(self, pos):
+    def setButtonsLayout(self, flag):
         """
         """
         viewSwitcherCtrl = self.getCtrl(self.IdentifierFlag.ViewSwitcherCtrl)
-        for flag, sizerDir, btnSizerDir in [
+        # set position
+        for thisFlag, sizerDir, btnSizerDir in [
             (self.ButtonStyleFlag.LeftButtonsArea, self.sizer.Direction.RightToLeft, self.sizer.Direction.TopToBottom),
             (self.ButtonStyleFlag.RightButtonsArea, self.sizer.Direction.LeftToRight, self.sizer.Direction.TopToBottom),
             (self.ButtonStyleFlag.TopButtonsArea, self.sizer.Direction.BottomToTop, self.sizer.Direction.LeftToRight),
             (self.ButtonStyleFlag.BottomButtonsArea, self.sizer.Direction.TopToBottom, self.sizer.Direction.LeftToRight),
         ]:
-            if pos | flag == pos:
+            if flag | thisFlag == flag:
                 # if flag is present, use sizer directions to move buttons to the corresponding area
                 self.sizer.setDirection(sizerDir)
                 viewSwitcherCtrl.sizer.setDirection(btnSizerDir)
-    
-    def setButtonsAlignment(self, align):
-        """
-        """
-        viewSwitcherCtrl = self.getCtrl(self.IdentifierFlag.ViewSwitcherCtrl)
+        # set alignment
         for flag, sizerFlag in [
             (self.ButtonStyleFlag.AlignButtonsLeading, util.Qt.AlignLeading),
             (self.ButtonStyleFlag.AlignButtonsCenter, util.Qt.AlignCenter),
             (self.ButtonStyleFlag.AlignButtonsTrailing, util.Qt.AlignTrailing),
         ]:
-            if align | flag == align:
+            if flag | thisFlag == flag:
                 # if flag is present, apply corresponding alignment to button sizer
                 viewSwitcherCtrl.sizer.setAlignment(sizerFlag)
 
