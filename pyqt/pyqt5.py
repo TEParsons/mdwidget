@@ -9,8 +9,8 @@ import PyQt5.QtWebEngineWidgets as html
 from pathlib import Path
 
 from ..assets import folder as assetsFolder
-from ..themes import editor as editorThemes
-from ..themes import viewer as viewerThemes
+from ..themes.editor.default import DefaultStyle as defaultEditorTheme
+from ..themes.viewer.default import DefaultStyle as defaultViewerTheme
 
 
 class MarkdownCtrl(qt.QWidget):
@@ -369,7 +369,7 @@ class ViewToggleButton(qt.QPushButton):
 
 
 class StyledTextCtrl(qt.QTextEdit):
-    theme = editorThemes.catppuccin.LatteStyle
+    theme = defaultEditorTheme
 
     def __init__(self, parent, language, minSize=(256, 256)):
         # initialise
@@ -393,15 +393,13 @@ class StyledTextCtrl(qt.QTextEdit):
 
         # get cursor handle
         cursor = gui.QTextCursor(self.document())
-        # get font family
-        if hasattr(self.theme, "font_family"):
-            fontFamily = self.theme.font_family
-        else:
-            fontFamily = "JetBrains Mono, Noto Emoji"
+        # make sure there's a font family
+        if not hasattr(self.theme, "font_family"):
+            self.theme.font_family = "JetBrains Mono, Noto Emoji"
         # set base style
         self.setStyleSheet(
             f"background-color: {self.theme.background_color};"
-            f"font-family: {fontFamily};"
+            f"font-family: {self.theme.font_family};"
             f"font-size: 10pt;"
             f"border: 1px solid {self.theme.line_number_background_color};"
         )
@@ -414,12 +412,12 @@ class StyledTextCtrl(qt.QTextEdit):
             token_style = self.theme.style_for_token(token)
             # create format object
             char_format = gui.QTextCharFormat()
-            char_format.setFontFamily(fontFamily)
+            char_format.setFontFamily(self.theme.font_family)
             char_format.setFontItalic(token_style['italic'])
             if token_style['bold']:
                 char_format.setFontWeight(600)
             char_format.setFontUnderline(token_style['underline'])
-            char_format.setForeground(gui.QColor("#" + token_style['color']))
+            char_format.setForeground(gui.QColor(f"#{token_style['color']}"))
             # select corresponding chars
             cursor.setPosition(i)
             cursor.movePosition(cursor.Right, n=len(text), mode=cursor.KeepAnchor)
@@ -433,7 +431,7 @@ class StyledTextCtrl(qt.QTextEdit):
 
 
 class HTMLPreviewCtrl(html.QWebEngineView):
-    theme = viewerThemes.catppuccin.LatteStyle
+    theme = defaultViewerTheme
 
     def __init__(self, parent, minSize=(256, 256)):
         # initalise
