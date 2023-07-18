@@ -14,6 +14,10 @@ from ..assets import folder as assetsFolder
 
 
 class MarkdownCtrl(qt.QWidget):
+    class SelectionMode(enum.Flag):
+        NoSelection = enum.auto()
+        SingleSelection = enum.auto()
+        MultiSelection = enum.auto()
     
     class IdentifierFlag(enum.Flag):
         # identifiers for controls
@@ -25,9 +29,6 @@ class MarkdownCtrl(qt.QWidget):
         ViewSwitcherCtrl = enum.auto()
     
     class ButtonStyleFlag(enum.Flag):
-        # view modes
-        SingleSelect = enum.auto()
-        MultipleSelect = enum.auto()
         # button style options
         ButtonIconOnly = enum.auto()
         ButtonTextOnly = enum.auto()
@@ -46,10 +47,8 @@ class MarkdownCtrl(qt.QWidget):
             self, parent, interpreter=None, 
             minCtrlSize=(256, 256),
             showCtrls=IdentifierFlag.RawMarkdownCtrl | IdentifierFlag.RenderedHtmlCtrl | IdentifierFlag.ViewSwitcherCtrl,
-            buttonStyle=(
-                ButtonStyleFlag.MultipleSelect | ButtonStyleFlag.ButtonIconOnly | 
-                ButtonStyleFlag.BottomButtonsArea | ButtonStyleFlag.AlignButtonsCenter
-            )
+            selectionMode=SelectionMode.MultiSelection,
+            buttonStyle=ButtonStyleFlag.ButtonIconOnly | ButtonStyleFlag.BottomButtonsArea | ButtonStyleFlag.AlignButtonsCenter
         ):
         # initialise
         qt.QWidget.__init__(self, parent)
@@ -98,8 +97,9 @@ class MarkdownCtrl(qt.QWidget):
         self.setCtrlVisibility(True, ctrls=showCtrls)
         # set button visibility
         self.setButtons(showCtrls)
+        # set selection mode
+        self.setSelectionMode(selectionMode)
         # set button style
-        self.setMultipleCtrl(buttonStyle)
         self.setButtonStyle(buttonStyle, buttons=self.IdentifierFlag.AllCtrls)
         self.setButtonsPosition(buttonStyle)        
         self.setButtonsAlignment(buttonStyle)
@@ -170,10 +170,10 @@ class MarkdownCtrl(qt.QWidget):
 
         return flagMap[obj]        
     
-    def setMultipleCtrl(self, multi=True):
+    def setSelectionMode(self, mode=True):
         """
         """
-        self.viewToggleCtrl.setMultipleSelection(multi)
+        self.viewToggleCtrl.setSelectionMode(mode)
     
     def setSingleCtrl(self):
         self.setMultipleCtrl(False)
@@ -332,8 +332,6 @@ class ViewToggleCtrl(qt.QWidget):
                 if flag in style:
                     self.setIcon(icon)
                     self.setText(text)
-            if style | MarkdownCtrl.ButtonStyleFlag.ButtonsHidden:
-                self.hide()
         
         def onClick(self, evt=None, recursive=True):
             if self.parent.multipleSelection:
@@ -354,7 +352,7 @@ class ViewToggleCtrl(qt.QWidget):
                 # if deselecting in single select mode, reselect
                 self.setChecked(True)        
            
-    def __init__(self, parent, multi=True):
+    def __init__(self, parent):
         # initialise
         qt.QWidget.__init__(self, parent)
         self.parent = parent
@@ -363,8 +361,6 @@ class ViewToggleCtrl(qt.QWidget):
         self.sizer.setAlignment(util.Qt.AlignCenter)
         # array for buttons
         self.btns = []
-        # set multiple select
-        self.setMultipleSelection(multi)
     
     def addButton(self, ctrl, iconName=None, label=""):
         # make button
@@ -376,14 +372,14 @@ class ViewToggleCtrl(qt.QWidget):
 
         return btn
 
-    def setMultipleSelection(self, multi=True):
+    def setSelectionMode(self, mode):
         # convert to boolean if using flags
-        if not isinstance(multi, bool) and MarkdownCtrl.ButtonStyleFlag.MultipleSelect in multi:
-            multi = True
-        if not isinstance(multi, bool) and MarkdownCtrl.ButtonStyleFlag.SingleSelect in multi:
-            multi = False 
+        if not isinstance(mode, bool) and MarkdownCtrl.SelectionMode.MultiSelection in mode:
+            mode = True
+        if not isinstance(mode, bool) and MarkdownCtrl.SelectionMode.SingleSelection in mode:
+            mode = False 
         # set
-        self.multipleSelection = multi
+        self.multipleSelection = mode
         # set values again (so limiting happens)
         self.setValues(self.getValues())
     
