@@ -393,10 +393,15 @@ class StyledTextCtrl(qt.QTextEdit):
 
         # get cursor handle
         cursor = gui.QTextCursor(self.document())
+        # get font family
+        if hasattr(self.theme, "font_family"):
+            fontFamily = self.theme.font_family
+        else:
+            fontFamily = "JetBrains Mono, Noto Emoji"
         # set base style
         self.setStyleSheet(
             f"background-color: {self.theme.background_color};"
-            f"font-family: JetBrains Mono, Noto Emoji;"
+            f"font-family: {fontFamily};"
             f"font-size: 10pt;"
             f"border: 1px solid {self.theme.line_number_background_color};"
         )
@@ -409,7 +414,7 @@ class StyledTextCtrl(qt.QTextEdit):
             token_style = self.theme.style_for_token(token)
             # create format object
             char_format = gui.QTextCharFormat()
-            char_format.setFontFamily("JetBrains Mono")
+            char_format.setFontFamily(fontFamily)
             char_format.setFontItalic(token_style['italic'])
             if token_style['bold']:
                 char_format.setFontWeight(600)
