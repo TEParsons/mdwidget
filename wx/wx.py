@@ -74,7 +74,7 @@ class MarkdownCtrl(wx.Panel):
         viewSwitcherCtrl = self._ctrls[self.CtrlFlag.ViewSwitcherCtrl] = wx.Panel(self)
         viewSwitcherCtrl.sizer = wx.BoxSizer(wx.HORIZONTAL)
         viewSwitcherCtrl.SetSizer(viewSwitcherCtrl.sizer)
-        self.sizer.Add(viewSwitcherCtrl, flag=wx.EXPAND)
+        self.sizer.Add(viewSwitcherCtrl)
         self._btns = {}
         
         # add raw markdown ctrl
@@ -84,7 +84,7 @@ class MarkdownCtrl(wx.Panel):
         # add view toggle button
         rawMarkdownBtn = ViewToggleButton(viewSwitcherCtrl, iconName="view_md", label="Markdown code")
         rawMarkdownBtn.Bind(wx.EVT_TOGGLEBUTTON, self.OnViewSwitcherButtonClicked)
-        viewSwitcherCtrl.sizer.Add(rawMarkdownBtn)
+        viewSwitcherCtrl.sizer.Add(rawMarkdownBtn, border=3, flag=wx.ALL)
         self._btns[self.CtrlFlag.RawMarkdownCtrl] = rawMarkdownBtn
 
         # add raw html ctrl
@@ -93,7 +93,7 @@ class MarkdownCtrl(wx.Panel):
         # add view toggle button
         rawHtmlBtn = ViewToggleButton(viewSwitcherCtrl, iconName="view_html", label="HTML code")
         rawHtmlBtn.Bind(wx.EVT_TOGGLEBUTTON, self.OnViewSwitcherButtonClicked)
-        viewSwitcherCtrl.sizer.Add(rawHtmlBtn)
+        viewSwitcherCtrl.sizer.Add(rawHtmlBtn, border=3, flag=wx.ALL)
         self._btns[self.CtrlFlag.RawHtmlCtrl] = rawHtmlBtn
 
         # add rendered HTML ctrl
@@ -102,13 +102,14 @@ class MarkdownCtrl(wx.Panel):
         # add view toggle button
         renderedHtmlBtn = ViewToggleButton(viewSwitcherCtrl, iconName="view_preview", label="HTML preview")
         renderedHtmlBtn.Bind(wx.EVT_TOGGLEBUTTON, self.OnViewSwitcherButtonClicked)
-        viewSwitcherCtrl.sizer.Add(renderedHtmlBtn)
+        viewSwitcherCtrl.sizer.Add(renderedHtmlBtn, border=3, flag=wx.ALL)
         self._btns[self.CtrlFlag.RenderedHtmlCtrl] = renderedHtmlBtn
 
 
         # set default style
         # self.setSelectionMode(self.SelectionMode.MultiSelection)
         self.SetView(self.CtrlFlag.AllCtrls)
+        self.SetButtonsLayout(self.ButtonLayoutFlag.AlignButtonsCenter | self.ButtonLayoutFlag.BottomButtonsArea)
     
     def GetMarkdownText(self):
         # get markdown ctrl
@@ -301,13 +302,13 @@ class MarkdownCtrl(wx.Panel):
                 btn = self.GetButton(flag)
                 # apply style
                 if MarkdownCtrl.ButtonStyleFlag.ButtonIconOnly in style:
-                    btn.SetIcon(btn._icon)
+                    btn.SetBitmap(btn._icon)
                     btn.SetLabel("")
                 elif MarkdownCtrl.ButtonStyleFlag.ButtonTextOnly in style:
-                    btn.SetIcon(wx.Bitmap())
+                    btn.SetBitmap(wx.Bitmap())
                     btn.SetLabel(btn._label)
                 elif MarkdownCtrl.ButtonStyleFlag.ButtonTextOnly in style:
-                    btn.SetIcon(btn._icon)
+                    btn.SetBitmap(btn._icon)
                     btn.SetLabel(btn._label)
     
     def SetButtonIcon(self, icon, buttons=CtrlFlag.AllCtrls):
@@ -335,30 +336,37 @@ class MarkdownCtrl(wx.Panel):
         viewSwitcherCtrl = self.GetCtrl(self.CtrlFlag.ViewSwitcherCtrl)
         # set position
         for thisFlag, sizerDir, btnSizerDir in [
-            (self.ButtonStyleFlag.LeftButtonsArea, wx.HORIZONTAL, wx.VERTICAL),
-            (self.ButtonStyleFlag.RightButtonsArea, wx.HORIZONTAL, wx.VERTICAL),
-            (self.ButtonStyleFlag.TopButtonsArea, wx.VERTICAL, wx.HORIZONTAL),
-            (self.ButtonStyleFlag.BottomButtonsArea, wx.VERTICAL, wx.HORIZONTAL),
+            (self.ButtonLayoutFlag.LeftButtonsArea, wx.HORIZONTAL, wx.VERTICAL),
+            (self.ButtonLayoutFlag.RightButtonsArea, wx.HORIZONTAL, wx.VERTICAL),
+            (self.ButtonLayoutFlag.TopButtonsArea, wx.VERTICAL, wx.HORIZONTAL),
+            (self.ButtonLayoutFlag.BottomButtonsArea, wx.VERTICAL, wx.HORIZONTAL),
         ]:
             if flag | thisFlag == flag:
                 # if flag is present, use sizer directions to move buttons to the corresponding area
                 self.sizer.SetOrientation(sizerDir)
                 viewSwitcherCtrl.sizer.SetOrientation(btnSizerDir)
-        # TODO: # set alignment
-        # for flag, sizerFlag in [
-        #     (self.ButtonStyleFlag.AlignButtonsLeading, util.Qt.AlignLeading),
-        #     (self.ButtonStyleFlag.AlignButtonsCenter, util.Qt.AlignCenter),
-        #     (self.ButtonStyleFlag.AlignButtonsTrailing, util.Qt.AlignTrailing),
-        # ]:
-        #     if flag | thisFlag == flag:
-        #         # if flag is present, apply corresponding alignment to button sizer
-        #         viewSwitcherCtrl.sizer.setAlignment(sizerFlag)
+        
+        # set alignment
+        for flag, sizerFlagH, sizerFlagV in [
+            (self.ButtonLayoutFlag.AlignButtonsLeading, wx.ALIGN_LEFT, wx.ALIGN_TOP),
+            (self.ButtonLayoutFlag.AlignButtonsCenter, wx.ALIGN_CENTER, wx.ALIGN_CENTER),
+            (self.ButtonLayoutFlag.AlignButtonsTrailing, wx.ALIGN_RIGHT, wx.ALIGN_BOTTOM),
+        ]:
+            if flag | thisFlag == flag:
+                item = self.sizer.GetItem(viewSwitcherCtrl)
+                # if flag is present, apply corresponding alignment to button sizer item
+                if self.sizer.GetOrientation() == wx.HORIZONTAL:
+                    item.SetFlag(sizerFlagV)
+                else:
+                    item.SetFlag(sizerFlagH)
+        
+        self.Layout()
 
 
 class ViewToggleButton(wx.ToggleButton):           
     def __init__(self, parent, iconName=None, label=""):
         # initialise
-        wx.ToggleButton.__init__(self, parent)
+        wx.ToggleButton.__init__(self, parent, style=wx.BU_EXACTFIT)
         self.parent = parent
         # set label
         self.SetLabel(label)
