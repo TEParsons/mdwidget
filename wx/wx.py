@@ -76,9 +76,8 @@ class MarkdownCtrl(wx.Panel, flags.FlagAtrributeMixin):
         viewSwitcherCtrl.sizer.Add(renderedHtmlBtn, border=3, flag=wx.ALL)
         self._btns[flags.RENDERED_HTML_CTRL] = renderedHtmlBtn
 
-
         # set default style
-        # self.setSelectionMode(self.SelectionMode.MultiSelection)
+        self.SetSelectionMode(flags.MULTI_SELECTION)
         self.SetView(flags.ALL_CTRLS)
         self.SetButtonsLayout(flags.ALIGN_BUTTONS_CENTER | flags.BOTTOM_BUTTONS_AREA)
     
@@ -128,6 +127,24 @@ class MarkdownCtrl(wx.Panel, flags.FlagAtrributeMixin):
         return htmlContent
 
     def OnViewSwitcherButtonClicked(self, evt=None):
+        # if single select, uncheck all other buttons
+        if self._selectionMode == flags.SINGLE_SELECTION:
+            if evt is not None:
+                # if triggered by event, get triggering button
+                thisBtn = evt.GetEventObject()
+            else:
+                # otherwise, get first button
+                thisBtn = self.GetButton(flags.RAW_MARKDOWN_CTRL)
+            
+            for flag in (
+                flags.RAW_MARKDOWN_CTRL,
+                flags.RAW_HTML_CTRL,
+                flags.RENDERED_HTML_CTRL,
+            ):
+                # get each button
+                btn = self.GetButton(flag)
+                # uncheck button if it's not the triggering button
+                btn.SetValue(btn == thisBtn)
         # list of ctrls to show
         ctrls = []
         # check each button
@@ -183,10 +200,8 @@ class MarkdownCtrl(wx.Panel, flags.FlagAtrributeMixin):
     def SetSelectionMode(self, mode):
         """
         """
-        if mode == flags.SINGLE_SELECTION:
-            self._btns.setExclusive(True)
-        if mode == flags.MULTI_SELECTION:
-            self._btns.setExclusive(False)
+        # store selection mode internally
+        self._selectionMode = mode
         # set view to match any change
         self.OnViewSwitcherButtonClicked()
     
