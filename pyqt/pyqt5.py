@@ -377,9 +377,13 @@ class StyledTextCtrl(qt.QTextEdit):
             f"border: 1px solid {self.theme.line_number_background_color};"
         )
         # lex content to get tokens
-        tokens = pygments.lex(self.toPlainText(), lexer=self.lexer)
+        content = self.toPlainText()
+        tokens = pygments.lex(content, lexer=self.lexer)
         # re-add characters with styling
         i = 0
+        while content.startswith("\n"):
+            content = content[1:]
+            i += 1
         for token, text in tokens:
             # get style for this token
             token_style = self.theme.style_for_token(token)
@@ -392,7 +396,7 @@ class StyledTextCtrl(qt.QTextEdit):
             char_format.setFontUnderline(token_style['underline'])
             char_format.setForeground(gui.QColor(f"#{token_style['color']}"))
             # select corresponding chars
-            cursor.setPosition(i+1)
+            cursor.setPosition(i)
             cursor.movePosition(cursor.Right, n=len(text), mode=cursor.KeepAnchor)
             # format selection
             cursor.setCharFormat(char_format)

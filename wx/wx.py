@@ -257,9 +257,9 @@ class MarkdownCtrl(wx.Panel, flags.FlagAtrributeMixin):
                 thisCtrl.theme = theme
                 # restyle
                 if isinstance(ctrl, StyledTextCtrl):
-                    thisCtrl.styleText()
+                    thisCtrl.StyleText()
                 if isinstance(ctrl, HTMLPreviewCtrl):
-                    thisCtrl.setHtml(self.GetHtml())
+                    thisCtrl.SetHtml(self.GetHtml())
     
     def SetButtonStyle(self, style, buttons=flags.ALL_CTRLS):
         """
@@ -385,9 +385,13 @@ class StyledTextCtrl(wx.richtext.RichTextCtrl):
         # set base background colour
         self.SetBackgroundColour(wx.Colour(self.theme.background_color))
         # lex content to get tokens
-        tokens = pygments.lex(self.GetValue(), lexer=self.lexer)
+        content = self.GetValue()
+        tokens = pygments.lex(content, lexer=self.lexer)
         # set character style
         i = 0
+        while content.startswith("\n"):
+            content = content[1:]
+            i += 1
         for token, text in tokens:
             # get style for this token
             token_style = self.theme.style_for_token(token)
