@@ -93,6 +93,8 @@ class MarkdownCtrl(wx.Panel, flags.FlagAtrributeMixin):
         ctrl = self.GetCtrl(flags.RAW_MARKDOWN_CTRL)
         # set content
         ctrl.SetValue(value)
+        # style
+        ctrl.StyleText()
     
     def OnSetMarkdownText(self, evt=None):
         # get HTML body
@@ -100,6 +102,8 @@ class MarkdownCtrl(wx.Panel, flags.FlagAtrributeMixin):
         # populate raw HTML ctrl
         rawHtmlCtrl = self.GetCtrl(flags.RAW_HTML_CTRL)
         rawHtmlCtrl.SetValue(htmlBody)
+        # style raw HTML ctrl
+        rawHtmlCtrl.StyleText()
         # get full HTML
         htmlFull = self.GetHtml()
         # populate rendered HTML ctrl
