@@ -124,20 +124,24 @@ class MarkdownCtrl(wx.Panel, flags.FlagAtrributeMixin):
         return htmlContent
 
     def OnViewSwitcherButtonClicked(self, evt=None):
+        # list of ctrls to show
+        ctrls = []
+        # check each button
         for flag in (
             flags.RAW_MARKDOWN_CTRL,
             flags.RAW_HTML_CTRL,
             flags.RENDERED_HTML_CTRL,
         ):
-            # get ctrl and button
-            ctrl = self.GetCtrl(flag)
+            # get button
             btn = self.GetButton(flag)
-            # align ctrl to button state
+            # add ctrl to list if button is pressed
             if btn.GetValue():
-                ctrl.Show()
-            else:
-                ctrl.Hide()
-        self.ctrlsPanel.SizeWindows()
+                ctrls.append(flag)
+        # add view toggle to list if shown 
+        if self.GetCtrl(flags.VIEW_SWITCHER_CTRL).IsShown():
+            ctrls.append(flags.VIEW_SWITCHER_CTRL)
+        # set ctrls
+        self.SetCtrls(ctrls)
 
     def GetHtml(self):
         # get html body
@@ -183,27 +187,36 @@ class MarkdownCtrl(wx.Panel, flags.FlagAtrributeMixin):
         self.OnViewSwitcherButtonClicked()
     
     def SetCtrls(self, ctrls):
-        # check flags
-        for flag in [
-            flags.RAW_MARKDOWN_CTRL,
-            flags.RAW_HTML_CTRL,
-            flags.RENDERED_HTML_CTRL,
-            flags.VIEW_SWITCHER_CTRL,
-        ]:
+        # figure out which ctrls are still in the panel
+        children = []
+        for i in range(3):
+            try:
+                ctrl = self.ctrlsPanel.GetWindow(i)
+                children.append(ctrl)
+            except:
+                pass
+        # remove them all
+        for ctrl in children:
+            self.ctrlsPanel.DetachWindow(ctrl)
+        # add back in if indicated
+        for flag in (flags.RAW_MARKDOWN_CTRL, flags.RAW_HTML_CTRL, flags.RENDERED_HTML_CTRL):
             # get ctrl and associated button
             ctrl = self.GetCtrl(flag)
             btn = self.GetButton(flag)
 
             if flag in ctrls:
-                # if visibility is True, show corresponding component
+                # if requested, add back in & set button value
                 ctrl.Show()
-                if btn is not None:
-                    btn.SetValue(True)
+                self.ctrlsPanel.AppendWindow(ctrl)
+                btn.SetValue(True)
             else:
-                # if False, hide the corresponding component
+                # otherwise, hide & set button value
                 ctrl.Hide()
-                if btn is not None:
-                    btn.SetValue(False)
+                btn.SetValue(False)
+        # layout panel
+        self.ctrlsPanel.SizeWindows()
+        # check for button ctrls flag
+        self.GetCtrl(flags.VIEW_SWITCHER_CTRL).Show(flags.VIEW_SWITCHER_CTRL in ctrls)
     
     def SetButtons(self, buttons):
         """
