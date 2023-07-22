@@ -8,42 +8,13 @@ import PyQt5.QtWebEngineWidgets as html
 
 from pathlib import Path
 
+from .. import flags
 from ..assets import folder as assetsFolder
 from ..themes.editor.default import DefaultStyle as defaultEditorTheme
 from ..themes.viewer.default import DefaultStyle as defaultViewerTheme
 
 
-class MarkdownCtrl(qt.QWidget):
-    class SelectionMode(enum.Flag):
-        SingleSelection = enum.auto()
-        MultiSelection = enum.auto()
-    
-    class CtrlFlag(enum.IntFlag):
-        # identifiers for controls
-        RawMarkdownCtrl = enum.auto()
-        RawHtmlCtrl = enum.auto()
-        RenderedHtmlCtrl = enum.auto()
-        AllCtrls = RawMarkdownCtrl | RawHtmlCtrl | RenderedHtmlCtrl
-        # identifier for button area
-        ViewSwitcherCtrl = enum.auto()
-    
-    class ButtonStyleFlag(enum.Flag):
-        # button style options
-        ButtonIconOnly = enum.auto()
-        ButtonTextOnly = enum.auto()
-        ButtonTextBesideIcon = enum.auto()
-    
-    class ButtonLayoutFlag(enum.Flag):
-        # button position options
-        LeftButtonsArea = enum.auto()
-        RightButtonsArea = enum.auto()
-        TopButtonsArea = enum.auto()
-        BottomButtonsArea = enum.auto()
-        # button alignment options
-        AlignButtonsLeading = enum.auto()
-        AlignButtonsCenter = enum.auto()
-        AlignButtonsTrailing = enum.auto()
-
+class MarkdownCtrl(qt.QWidget, flags.FlagAtrributeMixin):
     def __init__(
             self, parent, interpreter=None, 
             minCtrlSize=(256, 256)
@@ -68,53 +39,53 @@ class MarkdownCtrl(qt.QWidget):
         self._ctrls = {}
 
         # add view toggle ctrl
-        viewSwitcherCtrl = self._ctrls[self.CtrlFlag.ViewSwitcherCtrl] =qt.QWidget()
+        viewSwitcherCtrl = self._ctrls[flags.ViewSwitcherCtrl] = qt.QWidget()
         viewSwitcherCtrl.sizer = qt.QHBoxLayout(viewSwitcherCtrl)
         self.sizer.addWidget(viewSwitcherCtrl)
         self._btns = qt.QButtonGroup(self)
         
         # add raw markdown ctrl
-        rawMarkdownCtrl = self._ctrls[self.CtrlFlag.RawMarkdownCtrl] = StyledTextCtrl(self, language="markdown", minSize=minCtrlSize)
+        rawMarkdownCtrl = self._ctrls[flags.RawMarkdownCtrl] = StyledTextCtrl(self, language="markdown", minSize=minCtrlSize)
         rawMarkdownCtrl.textChanged.connect(self.onSetMarkdownText)
         ctrlsPanel.addWidget(rawMarkdownCtrl)
         # add view toggle button
         rawMarkdownBtn = ViewToggleButton(viewSwitcherCtrl, iconName="view_md", label="Markdown code")
         rawMarkdownBtn.clicked.connect(self.onViewSwitcherButtonClicked)
         viewSwitcherCtrl.sizer.addWidget(rawMarkdownBtn)
-        self._btns.addButton(rawMarkdownBtn, id=self.CtrlFlag.RawMarkdownCtrl)
+        self._btns.addButton(rawMarkdownBtn, id=flags.RawMarkdownCtrl)
 
         # add raw html ctrl
-        rawHtmlCtrl = self._ctrls[self.CtrlFlag.RawHtmlCtrl] = StyledTextCtrl(self, language="html", minSize=minCtrlSize)
+        rawHtmlCtrl = self._ctrls[flags.RawHtmlCtrl] = StyledTextCtrl(self, language="html", minSize=minCtrlSize)
         rawHtmlCtrl.setReadOnly(True)
         ctrlsPanel.addWidget(rawHtmlCtrl)
         # add view toggle button
         rawHtmlBtn = ViewToggleButton(viewSwitcherCtrl, iconName="view_html", label="HTML code")
         rawHtmlBtn.clicked.connect(self.onViewSwitcherButtonClicked)
         viewSwitcherCtrl.sizer.addWidget(rawHtmlBtn)
-        self._btns.addButton(rawHtmlBtn, id=self.CtrlFlag.RawHtmlCtrl)
+        self._btns.addButton(rawHtmlBtn, id=flags.RawHtmlCtrl)
 
         # add rendered HTML ctrl
-        renderedHtmlCtrl = self._ctrls[self.CtrlFlag.RenderedHtmlCtrl] = HTMLPreviewCtrl(self, minSize=minCtrlSize)
+        renderedHtmlCtrl = self._ctrls[flags.RenderedHtmlCtrl] = HTMLPreviewCtrl(self, minSize=minCtrlSize)
         ctrlsPanel.addWidget(renderedHtmlCtrl)
         # add view toggle button
         renderedHtmlBtn = ViewToggleButton(viewSwitcherCtrl, iconName="view_preview", label="HTML preview")
         renderedHtmlBtn.clicked.connect(self.onViewSwitcherButtonClicked)
         viewSwitcherCtrl.sizer.addWidget(renderedHtmlBtn)
-        self._btns.addButton(renderedHtmlBtn, id=self.CtrlFlag.RenderedHtmlCtrl)
+        self._btns.addButton(renderedHtmlBtn, id=flags.RenderedHtmlCtrl)
 
         # set default style
-        self.setSelectionMode(self.SelectionMode.MultiSelection)
-        self.setView(self.CtrlFlag.AllCtrls)
+        self.setSelectionMode(flags.MultiSelection)
+        self.setView(flags.AllCtrls)
     
     def getMarkdownText(self):
         # get markdown ctrl
-        ctrl = self.getCtrl(self.CtrlFlag.RawMarkdownCtrl)
+        ctrl = self.getCtrl(flags.RawMarkdownCtrl)
         # get content
         return ctrl.toPlainText()
 
     def setMarkdownText(self):
         # get markdown ctrl
-        ctrl = self.getCtrl(self.CtrlFlag.RawMarkdownCtrl)
+        ctrl = self.getCtrl(flags.RawMarkdownCtrl)
         # set content
         ctrl.setPlainText(ctrl)
     
@@ -122,12 +93,12 @@ class MarkdownCtrl(qt.QWidget):
         # get HTML body
         htmlBody = self.getHtmlBody()
         # populate raw HTML ctrl
-        rawHtmlCtrl = self.getCtrl(self.CtrlFlag.RawHtmlCtrl)
+        rawHtmlCtrl = self.getCtrl(flags.RawHtmlCtrl)
         rawHtmlCtrl.setPlainText(htmlBody)
         # get full HTML
         htmlFull = self.getHtml()
         # populate rendered HTML ctrl
-        renderedHtmlCtrl = self.getCtrl(self.CtrlFlag.RenderedHtmlCtrl)
+        renderedHtmlCtrl = self.getCtrl(flags.RenderedHtmlCtrl)
         renderedHtmlCtrl.setHtml(htmlFull)
     
     def getHtmlBody(self):
@@ -149,9 +120,9 @@ class MarkdownCtrl(qt.QWidget):
 
     def onViewSwitcherButtonClicked(self, evt=None):
         for flag in (
-            MarkdownCtrl.CtrlFlag.RawMarkdownCtrl,
-            MarkdownCtrl.CtrlFlag.RawHtmlCtrl,
-            MarkdownCtrl.CtrlFlag.RenderedHtmlCtrl,
+            flags.RawMarkdownCtrl,
+            flags.RawHtmlCtrl,
+            flags.RenderedHtmlCtrl,
         ):
             # get ctrl and button
             ctrl = self.getCtrl(flag)
@@ -166,7 +137,7 @@ class MarkdownCtrl(qt.QWidget):
         # get html body
         htmlBody = self.getHtmlBody()
         # get theme
-        theme = self.getCtrl(self.CtrlFlag.RenderedHtmlCtrl).theme
+        theme = self.getCtrl(flags.RenderedHtmlCtrl).theme
         # construct full html
         htmlFull = (
             f"<head>\n"
@@ -195,9 +166,9 @@ class MarkdownCtrl(qt.QWidget):
     def setSelectionMode(self, mode):
         """
         """
-        if mode == self.SelectionMode.SingleSelection:
+        if mode == flags.SingleSelection:
             self._btns.setExclusive(True)
-        if mode == self.SelectionMode.MultiSelection:
+        if mode == flags.MultiSelection:
             self._btns.setExclusive(False)
         # set view to match any change
         self.onViewSwitcherButtonClicked()
@@ -205,10 +176,10 @@ class MarkdownCtrl(qt.QWidget):
     def setCtrls(self, ctrls):
         # check flags
         for flag in [
-            MarkdownCtrl.CtrlFlag.RawMarkdownCtrl,
-            MarkdownCtrl.CtrlFlag.RawHtmlCtrl,
-            MarkdownCtrl.CtrlFlag.RenderedHtmlCtrl,
-            MarkdownCtrl.CtrlFlag.ViewSwitcherCtrl,
+            flags.RawMarkdownCtrl,
+            flags.RawHtmlCtrl,
+            flags.RenderedHtmlCtrl,
+            flags.ViewSwitcherCtrl,
         ]:
             # get ctrl and associated button
             ctrl = self.getCtrl(flag)
@@ -230,9 +201,9 @@ class MarkdownCtrl(qt.QWidget):
         """
         # check flags
         for flag in [
-            MarkdownCtrl.CtrlFlag.RawMarkdownCtrl,
-            MarkdownCtrl.CtrlFlag.RawHtmlCtrl,
-            MarkdownCtrl.CtrlFlag.RenderedHtmlCtrl,
+            flags.RawMarkdownCtrl,
+            flags.RawHtmlCtrl,
+            flags.RenderedHtmlCtrl,
         ]:
             # get corresponding button
             btn = self.getButton(flag)
@@ -250,9 +221,9 @@ class MarkdownCtrl(qt.QWidget):
         """
         # check flags
         for flag in [
-            MarkdownCtrl.CtrlFlag.RawMarkdownCtrl,
-            MarkdownCtrl.CtrlFlag.RawHtmlCtrl,
-            MarkdownCtrl.CtrlFlag.RenderedHtmlCtrl,
+            flags.RawMarkdownCtrl,
+            flags.RawHtmlCtrl,
+            flags.RenderedHtmlCtrl,
         ]:
             # get corresponding button
             btn = self.getButton(flag)
@@ -266,9 +237,9 @@ class MarkdownCtrl(qt.QWidget):
         """
         # check ctrl flags
         for flag in [
-            MarkdownCtrl.CtrlFlag.RawMarkdownCtrl,
-            MarkdownCtrl.CtrlFlag.RawHtmlCtrl,
-            MarkdownCtrl.CtrlFlag.RenderedHtmlCtrl,
+            flags.RawMarkdownCtrl,
+            flags.RawHtmlCtrl,
+            flags.RenderedHtmlCtrl,
         ]:
             if flag in ctrl:
                 # get ctrl
@@ -281,37 +252,37 @@ class MarkdownCtrl(qt.QWidget):
                 if isinstance(ctrl, HTMLPreviewCtrl):
                     thisCtrl.setHtml(self.getHtml())
     
-    def setButtonStyle(self, style, buttons=CtrlFlag.AllCtrls):
+    def setButtonStyle(self, style, buttons=flags.AllCtrls):
         """
         """
         # check flags
         for flag in [
-            self.CtrlFlag.RawMarkdownCtrl,
-            self.CtrlFlag.RawHtmlCtrl,
-            self.CtrlFlag.RenderedHtmlCtrl,
+            flags.RawMarkdownCtrl,
+            flags.RawHtmlCtrl,
+            flags.RenderedHtmlCtrl,
         ]:
             if flag in buttons:
                 # get corresponding button
                 btn = self.getButton(flag)
                 # apply style
-                if MarkdownCtrl.ButtonStyleFlag.ButtonIconOnly in style:
+                if flags.ButtonIconOnly in style:
                     btn.setIcon(btn._icon)
                     btn.setText("")
-                elif MarkdownCtrl.ButtonStyleFlag.ButtonTextOnly in style:
+                elif flags.ButtonTextOnly in style:
                     btn.setIcon(gui.QIcon())
                     btn.setText(btn._label)
-                elif MarkdownCtrl.ButtonStyleFlag.ButtonTextOnly in style:
+                elif flags.ButtonTextOnly in style:
                     btn.setIcon(btn._icon)
                     btn.setText(btn._label)
     
-    def setButtonIcon(self, icon, buttons=CtrlFlag.AllCtrls):
+    def setButtonIcon(self, icon, buttons=flags.AllCtrls):
         """
         """
         # check flags
         for flag in [
-            self.CtrlFlag.RawMarkdownCtrl,
-            self.CtrlFlag.RawHtmlCtrl,
-            self.CtrlFlag.RenderedHtmlCtrl,
+            flags.RawMarkdownCtrl,
+            flags.RawHtmlCtrl,
+            flags.RenderedHtmlCtrl,
         ]:
             if flag in buttons:
                 # get button
@@ -326,13 +297,13 @@ class MarkdownCtrl(qt.QWidget):
     def setButtonsLayout(self, flag):
         """
         """
-        viewSwitcherCtrl = self.getCtrl(self.CtrlFlag.ViewSwitcherCtrl)
+        viewSwitcherCtrl = self.getCtrl(flags.ViewSwitcherCtrl)
         # set position
         for thisFlag, sizerDir, btnSizerDir in [
-            (self.ButtonStyleFlag.LeftButtonsArea, self.sizer.Direction.RightToLeft, self.sizer.Direction.TopToBottom),
-            (self.ButtonStyleFlag.RightButtonsArea, self.sizer.Direction.LeftToRight, self.sizer.Direction.TopToBottom),
-            (self.ButtonStyleFlag.TopButtonsArea, self.sizer.Direction.BottomToTop, self.sizer.Direction.LeftToRight),
-            (self.ButtonStyleFlag.BottomButtonsArea, self.sizer.Direction.TopToBottom, self.sizer.Direction.LeftToRight),
+            (flags.LeftButtonsArea, self.sizer.Direction.RightToLeft, self.sizer.Direction.TopToBottom),
+            (flags.RightButtonsArea, self.sizer.Direction.LeftToRight, self.sizer.Direction.TopToBottom),
+            (flags.TopButtonsArea, self.sizer.Direction.BottomToTop, self.sizer.Direction.LeftToRight),
+            (flags.BottomButtonsArea, self.sizer.Direction.TopToBottom, self.sizer.Direction.LeftToRight),
         ]:
             if flag | thisFlag == flag:
                 # if flag is present, use sizer directions to move buttons to the corresponding area
@@ -340,9 +311,9 @@ class MarkdownCtrl(qt.QWidget):
                 viewSwitcherCtrl.sizer.setDirection(btnSizerDir)
         # set alignment
         for flag, sizerFlag in [
-            (self.ButtonStyleFlag.AlignButtonsLeading, util.Qt.AlignLeading),
-            (self.ButtonStyleFlag.AlignButtonsCenter, util.Qt.AlignCenter),
-            (self.ButtonStyleFlag.AlignButtonsTrailing, util.Qt.AlignTrailing),
+            (flags.AlignButtonsLeading, util.Qt.AlignLeading),
+            (flags.AlignButtonsCenter, util.Qt.AlignCenter),
+            (flags.AlignButtonsTrailing, util.Qt.AlignTrailing),
         ]:
             if flag | thisFlag == flag:
                 # if flag is present, apply corresponding alignment to button sizer

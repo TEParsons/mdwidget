@@ -9,42 +9,13 @@ import wx.richtext
 
 from pathlib import Path
 
+from .. import flags
 from ..assets import folder as assetsFolder
 from ..themes.editor.default import DefaultStyle as defaultEditorTheme
 from ..themes.viewer.default import DefaultStyle as defaultViewerTheme
 
 
-class MarkdownCtrl(wx.Panel):
-    class SelectionMode(enum.Flag):
-        SINGLE_SELECTION = enum.auto()
-        MULTI_SELECTION = enum.auto()
-    
-    class CtrlFlag(enum.IntFlag):
-        # identifiers for controls
-        RAW_MARKDOWN_CTRL = enum.auto()
-        RAW_HTML_CTRL = enum.auto()
-        RENDERED_HTML_CTRL = enum.auto()
-        ALL_CTRLS = RAW_MARKDOWN_CTRL | RAW_HTML_CTRL | RENDERED_HTML_CTRL
-        # identifier for button area
-        VIEW_SWITCHER_CTRL = enum.auto()
-    
-    class ButtonStyleFlag(enum.Flag):
-        # button style options
-        BUTTON_ICON_ONLY = enum.auto()
-        BUTTON_TEXT_ONLY = enum.auto()
-        BUTTON_TEXT_BESIDE_ICON = enum.auto()
-    
-    class ButtonLayoutFlag(enum.Flag):
-        # button position options
-        LEFT_BUTTONS_AREA = enum.auto()
-        RIGHT_BUTTONS_AREA = enum.auto()
-        TOP_BUTTONS_AREA = enum.auto()
-        BOTTOM_BUTTONS_AREA = enum.auto()
-        # button alignment options
-        ALIGN_BUTTONS_LEADING = enum.auto()
-        ALIGN_BUTTONS_CENTER = enum.auto()
-        ALIGN_BUTTONS_TRAILING = enum.auto()
-
+class MarkdownCtrl(wx.Panel, flags.FlagAtrributeMixin):
     def __init__(
             self, parent, interpreter=None, 
             minCtrlSize=(256, 256)
@@ -71,55 +42,55 @@ class MarkdownCtrl(wx.Panel):
         self._ctrls = {}
 
         # add view toggle ctrl
-        viewSwitcherCtrl = self._ctrls[self.CtrlFlag.VIEW_SWITCHER_CTRL] = wx.Panel(self)
+        viewSwitcherCtrl = self._ctrls[flags.VIEW_SWITCHER_CTRL] = wx.Panel(self)
         viewSwitcherCtrl.sizer = wx.BoxSizer(wx.HORIZONTAL)
         viewSwitcherCtrl.SetSizer(viewSwitcherCtrl.sizer)
         self.sizer.Add(viewSwitcherCtrl)
         self._btns = {}
         
         # add raw markdown ctrl
-        rawMarkdownCtrl = self._ctrls[self.CtrlFlag.RAW_MARKDOWN_CTRL] = StyledTextCtrl(ctrlsPanel, language="markdown", minSize=minCtrlSize, style=wx.richtext.RE_MULTILINE)
+        rawMarkdownCtrl = self._ctrls[flags.RAW_MARKDOWN_CTRL] = StyledTextCtrl(ctrlsPanel, language="markdown", minSize=minCtrlSize, style=wx.richtext.RE_MULTILINE)
         ctrlsPanel.AppendWindow(rawMarkdownCtrl)
         rawMarkdownCtrl.Bind(wx.EVT_TEXT, self.OnSetMarkdownText)
         # add view toggle button
         rawMarkdownBtn = ViewToggleButton(viewSwitcherCtrl, iconName="view_md", label="Markdown code")
         rawMarkdownBtn.Bind(wx.EVT_TOGGLEBUTTON, self.OnViewSwitcherButtonClicked)
         viewSwitcherCtrl.sizer.Add(rawMarkdownBtn, border=3, flag=wx.ALL)
-        self._btns[self.CtrlFlag.RAW_MARKDOWN_CTRL] = rawMarkdownBtn
+        self._btns[flags.RAW_MARKDOWN_CTRL] = rawMarkdownBtn
 
         # add raw html ctrl
-        rawHtmlCtrl = self._ctrls[self.CtrlFlag.RAW_HTML_CTRL] = StyledTextCtrl(ctrlsPanel, language="html", minSize=minCtrlSize, style=wx.richtext.RE_MULTILINE | wx.richtext.RE_READONLY)
+        rawHtmlCtrl = self._ctrls[flags.RAW_HTML_CTRL] = StyledTextCtrl(ctrlsPanel, language="html", minSize=minCtrlSize, style=wx.richtext.RE_MULTILINE | wx.richtext.RE_READONLY)
         ctrlsPanel.AppendWindow(rawHtmlCtrl)
         # add view toggle button
         rawHtmlBtn = ViewToggleButton(viewSwitcherCtrl, iconName="view_html", label="HTML code")
         rawHtmlBtn.Bind(wx.EVT_TOGGLEBUTTON, self.OnViewSwitcherButtonClicked)
         viewSwitcherCtrl.sizer.Add(rawHtmlBtn, border=3, flag=wx.ALL)
-        self._btns[self.CtrlFlag.RAW_HTML_CTRL] = rawHtmlBtn
+        self._btns[flags.RAW_HTML_CTRL] = rawHtmlBtn
 
         # add rendered HTML ctrl
-        renderedHtmlCtrl = self._ctrls[self.CtrlFlag.RENDERED_HTML_CTRL] = HTMLPreviewCtrl(ctrlsPanel, minSize=minCtrlSize)
+        renderedHtmlCtrl = self._ctrls[flags.RENDERED_HTML_CTRL] = HTMLPreviewCtrl(ctrlsPanel, minSize=minCtrlSize)
         ctrlsPanel.AppendWindow(renderedHtmlCtrl)
         # add view toggle button
         renderedHtmlBtn = ViewToggleButton(viewSwitcherCtrl, iconName="view_preview", label="HTML preview")
         renderedHtmlBtn.Bind(wx.EVT_TOGGLEBUTTON, self.OnViewSwitcherButtonClicked)
         viewSwitcherCtrl.sizer.Add(renderedHtmlBtn, border=3, flag=wx.ALL)
-        self._btns[self.CtrlFlag.RENDERED_HTML_CTRL] = renderedHtmlBtn
+        self._btns[flags.RENDERED_HTML_CTRL] = renderedHtmlBtn
 
 
         # set default style
         # self.setSelectionMode(self.SelectionMode.MultiSelection)
-        self.SetView(self.CtrlFlag.ALL_CTRLS)
-        self.SetButtonsLayout(self.ButtonLayoutFlag.ALIGN_BUTTONS_CENTER | self.ButtonLayoutFlag.BOTTOM_BUTTONS_AREA)
+        self.SetView(flags.ALL_CTRLS)
+        self.SetButtonsLayout(flags.ALIGN_BUTTONS_CENTER | flags.BOTTOM_BUTTONS_AREA)
     
     def GetMarkdownText(self):
         # get markdown ctrl
-        ctrl = self.GetCtrl(self.CtrlFlag.RAW_MARKDOWN_CTRL)
+        ctrl = self.GetCtrl(flags.RAW_MARKDOWN_CTRL)
         # get content
         return ctrl.GetValue()
 
     def SetMarkdownText(self):
         # get markdown ctrl
-        ctrl = self.GetCtrl(self.CtrlFlag.RAW_MARKDOWN_CTRL)
+        ctrl = self.GetCtrl(flags.RAW_MARKDOWN_CTRL)
         # set content
         ctrl.SetValue(ctrl)
     
@@ -127,12 +98,12 @@ class MarkdownCtrl(wx.Panel):
         # get HTML body
         htmlBody = self.GetHtmlBody()
         # populate raw HTML ctrl
-        rawHtmlCtrl = self.GetCtrl(self.CtrlFlag.RAW_HTML_CTRL)
+        rawHtmlCtrl = self.GetCtrl(flags.RAW_HTML_CTRL)
         rawHtmlCtrl.SetValue(htmlBody)
         # get full HTML
         htmlFull = self.GetHtml()
         # populate rendered HTML ctrl
-        renderedHtmlCtrl = self.GetCtrl(self.CtrlFlag.RENDERED_HTML_CTRL)
+        renderedHtmlCtrl = self.GetCtrl(flags.RENDERED_HTML_CTRL)
         renderedHtmlCtrl.SetHtml(htmlFull)
     
     def GetHtmlBody(self):
@@ -154,9 +125,9 @@ class MarkdownCtrl(wx.Panel):
 
     def OnViewSwitcherButtonClicked(self, evt=None):
         for flag in (
-            MarkdownCtrl.CtrlFlag.RAW_MARKDOWN_CTRL,
-            MarkdownCtrl.CtrlFlag.RAW_HTML_CTRL,
-            MarkdownCtrl.CtrlFlag.RENDERED_HTML_CTRL,
+            flags.RAW_MARKDOWN_CTRL,
+            flags.RAW_HTML_CTRL,
+            flags.RENDERED_HTML_CTRL,
         ):
             # get ctrl and button
             ctrl = self.GetCtrl(flag)
@@ -172,7 +143,7 @@ class MarkdownCtrl(wx.Panel):
         # get html body
         htmlBody = self.GetHtmlBody()
         # get theme
-        theme = self.GetCtrl(self.CtrlFlag.RENDERED_HTML_CTRL).theme
+        theme = self.GetCtrl(flags.RENDERED_HTML_CTRL).theme
         # construct full html
         htmlFull = (
             f"<head>\n"
@@ -202,9 +173,9 @@ class MarkdownCtrl(wx.Panel):
     def SetSelectionMode(self, mode):
         """
         """
-        if mode == self.SelectionMode.SINGLE_SELECTION:
+        if mode == flags.SINGLE_SELECTION:
             self._btns.setExclusive(True)
-        if mode == self.SelectionMode.MULTI_SELECTION:
+        if mode == flags.MULTI_SELECTION:
             self._btns.setExclusive(False)
         # set view to match any change
         self.OnViewSwitcherButtonClicked()
@@ -212,10 +183,10 @@ class MarkdownCtrl(wx.Panel):
     def SetCtrls(self, ctrls):
         # check flags
         for flag in [
-            MarkdownCtrl.CtrlFlag.RAW_MARKDOWN_CTRL,
-            MarkdownCtrl.CtrlFlag.RAW_HTML_CTRL,
-            MarkdownCtrl.CtrlFlag.RENDERED_HTML_CTRL,
-            MarkdownCtrl.CtrlFlag.VIEW_SWITCHER_CTRL,
+            flags.RAW_MARKDOWN_CTRL,
+            flags.RAW_HTML_CTRL,
+            flags.RENDERED_HTML_CTRL,
+            flags.VIEW_SWITCHER_CTRL,
         ]:
             # get ctrl and associated button
             ctrl = self.GetCtrl(flag)
@@ -237,9 +208,9 @@ class MarkdownCtrl(wx.Panel):
         """
         # check flags
         for flag in [
-            MarkdownCtrl.CtrlFlag.RAW_MARKDOWN_CTRL,
-            MarkdownCtrl.CtrlFlag.RAW_HTML_CTRL,
-            MarkdownCtrl.CtrlFlag.RENDERED_HTML_CTRL,
+            flags.RAW_MARKDOWN_CTRL,
+            flags.RAW_HTML_CTRL,
+            flags.RENDERED_HTML_CTRL,
         ]:
             # get corresponding button
             btn = self.GetButton(flag)
@@ -257,9 +228,9 @@ class MarkdownCtrl(wx.Panel):
         """
         # check flags
         for flag in [
-            MarkdownCtrl.CtrlFlag.RAW_MARKDOWN_CTRL,
-            MarkdownCtrl.CtrlFlag.RAW_HTML_CTRL,
-            MarkdownCtrl.CtrlFlag.RENDERED_HTML_CTRL,
+            flags.RAW_MARKDOWN_CTRL,
+            flags.RAW_HTML_CTRL,
+            flags.RENDERED_HTML_CTRL,
         ]:
             # get corresponding button
             btn = self.GetButton(flag)
@@ -273,9 +244,9 @@ class MarkdownCtrl(wx.Panel):
         """
         # check ctrl flags
         for flag in [
-            MarkdownCtrl.CtrlFlag.RAW_MARKDOWN_CTRL,
-            MarkdownCtrl.CtrlFlag.RAW_HTML_CTRL,
-            MarkdownCtrl.CtrlFlag.RENDERED_HTML_CTRL,
+            flags.RAW_MARKDOWN_CTRL,
+            flags.RAW_HTML_CTRL,
+            flags.RENDERED_HTML_CTRL,
         ]:
             if flag in ctrl:
                 # get ctrl
@@ -288,37 +259,37 @@ class MarkdownCtrl(wx.Panel):
                 if isinstance(ctrl, HTMLPreviewCtrl):
                     thisCtrl.setHtml(self.GetHtml())
     
-    def SetButtonStyle(self, style, buttons=CtrlFlag.ALL_CTRLS):
+    def SetButtonStyle(self, style, buttons=flags.ALL_CTRLS):
         """
         """
         # check flags
         for flag in [
-            self.CtrlFlag.RAW_MARKDOWN_CTRL,
-            self.CtrlFlag.RAW_HTML_CTRL,
-            self.CtrlFlag.RENDERED_HTML_CTRL,
+            flags.RAW_MARKDOWN_CTRL,
+            flags.RAW_HTML_CTRL,
+            flags.RENDERED_HTML_CTRL,
         ]:
             if flag in buttons:
                 # get corresponding button
                 btn = self.GetButton(flag)
                 # apply style
-                if MarkdownCtrl.ButtonStyleFlag.BUTTON_ICON_ONLY in style:
+                if flags.BUTTON_ICON_ONLY in style:
                     btn.SetBitmap(btn._icon)
                     btn.SetLabel("")
-                elif MarkdownCtrl.ButtonStyleFlag.BUTTON_TEXT_ONLY in style:
+                elif flags.BUTTON_TEXT_ONLY in style:
                     btn.SetBitmap(wx.Bitmap())
                     btn.SetLabel(btn._label)
-                elif MarkdownCtrl.ButtonStyleFlag.BUTTON_TEXT_ONLY in style:
+                elif flags.BUTTON_TEXT_ONLY in style:
                     btn.SetBitmap(btn._icon)
                     btn.SetLabel(btn._label)
     
-    def SetButtonIcon(self, icon, buttons=CtrlFlag.ALL_CTRLS):
+    def SetButtonIcon(self, icon, buttons=flags.ALL_CTRLS):
         """
         """
         # check flags
         for flag in [
-            self.CtrlFlag.RAW_MARKDOWN_CTRL,
-            self.CtrlFlag.RAW_HTML_CTRL,
-            self.CtrlFlag.RENDERED_HTML_CTRL,
+            flags.RAW_MARKDOWN_CTRL,
+            flags.RAW_HTML_CTRL,
+            flags.RENDERED_HTML_CTRL,
         ]:
             if flag in buttons:
                 # get button
@@ -333,13 +304,13 @@ class MarkdownCtrl(wx.Panel):
     def SetButtonsLayout(self, flag):
         """
         """
-        viewSwitcherCtrl = self.GetCtrl(self.CtrlFlag.VIEW_SWITCHER_CTRL)
+        viewSwitcherCtrl = self.GetCtrl(flags.VIEW_SWITCHER_CTRL)
         # set position
         for thisFlag, sizerDir, btnSizerDir in [
-            (self.ButtonLayoutFlag.LEFT_BUTTONS_AREA, wx.HORIZONTAL, wx.VERTICAL),
-            (self.ButtonLayoutFlag.RIGHT_BUTTONS_AREA, wx.HORIZONTAL, wx.VERTICAL),
-            (self.ButtonLayoutFlag.TOP_BUTTONS_AREA, wx.VERTICAL, wx.HORIZONTAL),
-            (self.ButtonLayoutFlag.BOTTOM_BUTTONS_AREA, wx.VERTICAL, wx.HORIZONTAL),
+            (flags.LEFT_BUTTONS_AREA, wx.HORIZONTAL, wx.VERTICAL),
+            (flags.RIGHT_BUTTONS_AREA, wx.HORIZONTAL, wx.VERTICAL),
+            (flags.TOP_BUTTONS_AREA, wx.VERTICAL, wx.HORIZONTAL),
+            (flags.BOTTOM_BUTTONS_AREA, wx.VERTICAL, wx.HORIZONTAL),
         ]:
             if flag | thisFlag == flag:
                 # if flag is present, use sizer directions to move buttons to the corresponding area
@@ -348,9 +319,9 @@ class MarkdownCtrl(wx.Panel):
         
         # set alignment
         for flag, sizerFlagH, sizerFlagV in [
-            (self.ButtonLayoutFlag.ALIGN_BUTTONS_LEADING, wx.ALIGN_LEFT, wx.ALIGN_TOP),
-            (self.ButtonLayoutFlag.ALIGN_BUTTONS_CENTER, wx.ALIGN_CENTER, wx.ALIGN_CENTER),
-            (self.ButtonLayoutFlag.ALIGN_BUTTONS_TRAILING, wx.ALIGN_RIGHT, wx.ALIGN_BOTTOM),
+            (flags.ALIGN_BUTTONS_LEADING, wx.ALIGN_LEFT, wx.ALIGN_TOP),
+            (flags.ALIGN_BUTTONS_CENTER, wx.ALIGN_CENTER, wx.ALIGN_CENTER),
+            (flags.ALIGN_BUTTONS_TRAILING, wx.ALIGN_RIGHT, wx.ALIGN_BOTTOM),
         ]:
             if flag | thisFlag == flag:
                 item = self.sizer.GetItem(viewSwitcherCtrl)
