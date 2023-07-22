@@ -83,11 +83,11 @@ class MarkdownCtrl(qt.QWidget, flags.FlagAtrributeMixin):
         # get content
         return ctrl.toPlainText()
 
-    def setMarkdownText(self):
+    def setMarkdownText(self, value):
         # get markdown ctrl
         ctrl = self.getCtrl(flags.RawMarkdownCtrl)
         # set content
-        ctrl.setPlainText(ctrl)
+        ctrl.setPlainText(value)
     
     def onSetMarkdownText(self, evt=None):
         # get HTML body
@@ -392,7 +392,7 @@ class StyledTextCtrl(qt.QTextEdit):
             char_format.setFontUnderline(token_style['underline'])
             char_format.setForeground(gui.QColor(f"#{token_style['color']}"))
             # select corresponding chars
-            cursor.setPosition(i)
+            cursor.setPosition(i+1)
             cursor.movePosition(cursor.Right, n=len(text), mode=cursor.KeepAnchor)
             # format selection
             cursor.setCharFormat(char_format)
