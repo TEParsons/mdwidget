@@ -88,11 +88,11 @@ class MarkdownCtrl(wx.Panel, flags.FlagAtrributeMixin):
         # get content
         return ctrl.GetValue()
 
-    def SetMarkdownText(self):
+    def SetMarkdownText(self, value):
         # get markdown ctrl
         ctrl = self.GetCtrl(flags.RAW_MARKDOWN_CTRL)
         # set content
-        ctrl.SetValue(ctrl)
+        ctrl.SetValue(value)
     
     def OnSetMarkdownText(self, evt=None):
         # get HTML body
