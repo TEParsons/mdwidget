@@ -152,7 +152,9 @@ class MarkdownCtrl(wx.Panel, flags.FlagAtrributeMixin):
             f"</style>\n"
             f"</head>\n"
             f"<body>\n"
+            f"<main>\n"
             f"{htmlBody}\n"
+            f"</main>\n"
             f"</body>"
         )
         

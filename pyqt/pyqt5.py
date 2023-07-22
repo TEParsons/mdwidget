@@ -146,7 +146,9 @@ class MarkdownCtrl(qt.QWidget, flags.FlagAtrributeMixin):
             f"</style>\n"
             f"</head>\n"
             f"<body>\n"
+            f"<main>\n"
             f"{htmlBody}\n"
+            f"</main>\n"
             f"</body>"
         )
         
