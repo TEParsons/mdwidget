@@ -312,7 +312,7 @@ class MarkdownCtrl(qt.QWidget, flags.FlagAtrributeMixin):
                 self.sizer.setDirection(sizerDir)
                 viewSwitcherCtrl.sizer.setDirection(btnSizerDir)
         # set alignment
-        for flag, sizerFlag in [
+        for thisFlag, sizerFlag in [
             (flags.AlignButtonsLeading, util.Qt.AlignLeading),
             (flags.AlignButtonsCenter, util.Qt.AlignCenter),
             (flags.AlignButtonsTrailing, util.Qt.AlignTrailing),

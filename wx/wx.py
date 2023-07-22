@@ -320,7 +320,7 @@ class MarkdownCtrl(wx.Panel, flags.FlagAtrributeMixin):
                 viewSwitcherCtrl.sizer.SetOrientation(btnSizerDir)
         
         # set alignment
-        for flag, sizerFlagH, sizerFlagV in [
+        for thisFlag, sizerFlagH, sizerFlagV in [
             (flags.ALIGN_BUTTONS_LEADING, wx.ALIGN_LEFT, wx.ALIGN_TOP),
             (flags.ALIGN_BUTTONS_CENTER, wx.ALIGN_CENTER, wx.ALIGN_CENTER),
             (flags.ALIGN_BUTTONS_TRAILING, wx.ALIGN_RIGHT, wx.ALIGN_BOTTOM),
