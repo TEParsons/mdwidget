@@ -196,14 +196,14 @@ class MarkdownCtrl(wx.Panel, flags.FlagAtrributeMixin):
 
             if flag in ctrls:
                 # if visibility is True, show corresponding component
-                ctrl.show()
+                ctrl.Show()
                 if btn is not None:
-                    btn.setChecked(True)
+                    btn.SetValue(True)
             else:
                 # if False, hide the corresponding component
-                ctrl.hide()
+                ctrl.Hide()
                 if btn is not None:
-                    btn.setChecked(False)
+                    btn.SetValue(False)
     
     def SetButtons(self, buttons):
         """
@@ -219,11 +219,11 @@ class MarkdownCtrl(wx.Panel, flags.FlagAtrributeMixin):
 
             if flag in buttons:
                 # if visibility is True, show corresponding button
-                btn.show()
+                btn.Show()
             else:
                 # if False, hide the corresponding button
-                btn.hide()
-                btn.setChecked(False)
+                btn.Hide()
+                btn.SetValue(False)
     
     def SetView(self, ctrls):
         """
@@ -308,16 +308,19 @@ class MarkdownCtrl(wx.Panel, flags.FlagAtrributeMixin):
         """
         viewSwitcherCtrl = self.GetCtrl(flags.VIEW_SWITCHER_CTRL)
         # set position
-        for thisFlag, sizerDir, btnSizerDir in [
-            (flags.LEFT_BUTTONS_AREA, wx.HORIZONTAL, wx.VERTICAL),
-            (flags.RIGHT_BUTTONS_AREA, wx.HORIZONTAL, wx.VERTICAL),
-            (flags.TOP_BUTTONS_AREA, wx.VERTICAL, wx.HORIZONTAL),
-            (flags.BOTTOM_BUTTONS_AREA, wx.VERTICAL, wx.HORIZONTAL),
+        for thisFlag, sizerDir, btnSizerDir, pos in [
+            (flags.LEFT_BUTTONS_AREA, wx.HORIZONTAL, wx.VERTICAL, 0),
+            (flags.RIGHT_BUTTONS_AREA, wx.HORIZONTAL, wx.VERTICAL, 1),
+            (flags.TOP_BUTTONS_AREA, wx.VERTICAL, wx.HORIZONTAL, 0),
+            (flags.BOTTOM_BUTTONS_AREA, wx.VERTICAL, wx.HORIZONTAL, 1),
         ]:
             if flag | thisFlag == flag:
                 # if flag is present, use sizer directions to move buttons to the corresponding area
                 self.sizer.SetOrientation(sizerDir)
                 viewSwitcherCtrl.sizer.SetOrientation(btnSizerDir)
+                # to change layout order, move buttons ctrl to start/end of sizer
+                self.sizer.Detach(viewSwitcherCtrl)
+                self.sizer.Insert(pos, viewSwitcherCtrl)
         
         # set alignment
         for thisFlag, sizerFlagH, sizerFlagV in [
