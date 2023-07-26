@@ -247,7 +247,8 @@ class MarkdownCtrl(qt.QWidget, flags.FlagAtrributeMixin):
                 # get ctrl
                 thisCtrl = self.getCtrl(flag)
                 # set theme
-                thisCtrl.theme = theme
+                if hasattr(thisCtrl, "setTheme"):
+                    thisCtrl.setTheme(theme)
                 # restyle
                 if isinstance(ctrl, StyledTextCtrl):
                     thisCtrl.styleText()
@@ -341,9 +342,40 @@ class ViewToggleButton(qt.QPushButton):
         self._icon = icon
 
 
-class StyledTextCtrl(qt.QTextEdit):
-    theme = defaultEditorTheme
+class PyQtFormatter:
+    def __init__(self, theme):
+        self.theme = theme
+        self.styles = {}
+    
+    def GetBaseFont(self):
+        # create format object
+        charFormat = gui.QTextCharFormat()
+        charFormat.setFontFamily("monospace")
+        if hasattr(self.theme, "font_family"):
+            charFormat.setFontFamily(self.theme.font_family)
+        charFormat.setFontPointSize(10)
+        
+        return charFormat
+    
+    def GetTokenFont(self, token):
+        if token not in self.styles:
+            # get style for this token
+            tokenStyle = self.theme.style_for_token(token)
+            # get base font
+            charFormat = self.GetBaseFont()
+            # apply style
+            charFormat.setFontItalic(tokenStyle['italic'])
+            if tokenStyle['bold']:
+                charFormat.setFontWeight(600)
+            charFormat.setFontUnderline(tokenStyle['underline'])
+            charFormat.setForeground(gui.QColor(f"#{tokenStyle['color']}"))
+            # assign to styles dict
+            self.styles[token] = charFormat
+        
+        return self.styles[token]
 
+
+class StyledTextCtrl(qt.QTextEdit):
     def __init__(self, parent, language, minSize=(256, 256)):
         # initialise
         qt.QTextEdit.__init__(self)
@@ -354,8 +386,16 @@ class StyledTextCtrl(qt.QTextEdit):
         self.setMinimumSize(*minSize)
         # setup lexer
         self.lexer = pygments.lexers.get_lexer_by_name(language)
+        # setup formatter
+        self.formatter = PyQtFormatter(defaultEditorTheme)
         # bind style function
         self.textChanged.connect(self.styleText)
+    
+    def setTheme(self, theme):
+        self.formatter = PyQtFormatter(theme)
+    
+    def getTheme(self):
+        return self.formatter.theme
     
     def styleText(self):
         """
@@ -363,18 +403,13 @@ class StyledTextCtrl(qt.QTextEdit):
         """
         # don't trigger any events while this method executes
         self.blockSignals(True)
+        self.setUpdatesEnabled(False)
 
         # get cursor handle
         cursor = gui.QTextCursor(self.document())
-        # make sure there's a font family
-        if not hasattr(self.theme, "font_family"):
-            self.theme.font_family = "monospace"
         # set base style
         self.setStyleSheet(
-            f"background-color: {self.theme.background_color};"
-            f"font-family: {self.theme.font_family};"
-            f"font-size: 10pt;"
-            f"border: 1px solid {self.theme.line_number_background_color};"
+            f"background-color: {self.getTheme().background_color};"
         )
         # lex content to get tokens
         content = self.toPlainText()
@@ -385,26 +420,18 @@ class StyledTextCtrl(qt.QTextEdit):
             content = content[1:]
             i += 1
         for token, text in tokens:
-            # get style for this token
-            token_style = self.theme.style_for_token(token)
-            # create format object
-            char_format = gui.QTextCharFormat()
-            char_format.setFontFamily(self.theme.font_family)
-            char_format.setFontItalic(token_style['italic'])
-            if token_style['bold']:
-                char_format.setFontWeight(600)
-            char_format.setFontUnderline(token_style['underline'])
-            char_format.setForeground(gui.QColor(f"#{token_style['color']}"))
+            charFormat = self.formatter.GetTokenFont(token)
             # select corresponding chars
             cursor.setPosition(i)
             cursor.movePosition(cursor.Right, n=len(text), mode=cursor.KeepAnchor)
             # format selection
-            cursor.setCharFormat(char_format)
+            cursor.setCharFormat(charFormat)
             # move forward to next token
             i += len(text)
 
         # allow signals to trigger again
         self.blockSignals(False)
+        self.setUpdatesEnabled(True)
 
 
 class HTMLPreviewCtrl(html.QWebEngineView):
@@ -417,7 +444,15 @@ class HTMLPreviewCtrl(html.QWebEngineView):
         # set minimum size
         self.setMinimumSize(*minSize)
     
+    def setTheme(self, theme):
+        self.theme = theme
+    
+    def getTheme(self):
+        return self.theme
+    
     def setHtml(self, content, filename=None):
+        if not self.isVisible():
+            return
         # if not given a filename, use assets folder
         if filename is None:
             filename = Path(__file__).parent.parent / "assets" / "untitled.html"
