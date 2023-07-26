@@ -168,7 +168,7 @@ class MarkdownCtrl(wx.Panel, flags.FlagAtrributeMixin):
         # get html body
         htmlBody = self.GetHtmlBody()
         # get theme
-        theme = self.GetCtrl(flags.RENDERED_HTML_CTRL).theme
+        theme = self.GetCtrl(flags.RENDERED_HTML_CTRL).GetTheme()
         # construct full html
         htmlFull = (
             f"<head>\n"
@@ -286,7 +286,8 @@ class MarkdownCtrl(wx.Panel, flags.FlagAtrributeMixin):
                 # get ctrl
                 thisCtrl = self.GetCtrl(flag)
                 # set theme
-                thisCtrl.theme = theme
+                if hasattr(thisCtrl, "SetTheme"):
+                    thisCtrl.SetTheme(theme)
                 # restyle
                 if isinstance(ctrl, StyledTextCtrl):
                     thisCtrl.StyleText()
@@ -389,9 +390,44 @@ class ViewToggleButton(wx.ToggleButton):
         self._icon = icon
 
 
-class StyledTextCtrl(wx.richtext.RichTextCtrl):
-    theme = defaultEditorTheme
+class WxFormatter:
+    def __init__(self, theme):
+        self.theme = theme
+        self.styles = {}
+    
+    def GetBaseFont(self):
+        # blank font object
+        font = wx.Font()
+        # set font and size
+        font.SetPointSize(10)
+        font.SetFamily(wx.FONTFAMILY_TELETYPE)
+        # if we have a face name, set it
+        if hasattr(self.theme, "font_family"):
+            font.SetFaceName(self.theme.font_family)
+        
+        return font
+    
+    def GetTokenFont(self, token):
+        if token not in self.styles:
+            # get style for this token
+            tokenStyle = self.theme.style_for_token(token)
+            # get base font
+            font = self.GetBaseFont()
+            # apply style
+            font.SetStyle(wx.FONTSTYLE_ITALIC if tokenStyle['italic'] else wx.FONTSTYLE_NORMAL)
+            font.SetWeight(wx.FONTWEIGHT_BOLD if tokenStyle['bold'] else wx.FONTWEIGHT_NORMAL)
+            font.SetUnderlined(tokenStyle['underline'])
+            # create textattr from font & colour
+            attr = wx.TextAttr(wx.Colour(f"#{tokenStyle['color']}"), font=font)
+            # convert to rich text attribute
+            style = wx.richtext.RichTextAttr(attr)
+            # assign to styles dict
+            self.styles[token] = style
+        
+        return self.styles[token]
 
+
+class StyledTextCtrl(wx.richtext.RichTextCtrl):
     def __init__(self, parent, language, minSize=(256, 256), style=wx.richtext.RE_MULTILINE):
         # initialise
         wx.TextCtrl.__init__(self, parent, style=style)
@@ -400,9 +436,17 @@ class StyledTextCtrl(wx.richtext.RichTextCtrl):
         self.SetMinSize(minSize)
         # setup lexer
         self.lexer = pygments.lexers.get_lexer_by_name(language)
+        # setup formatter
+        self.formatter = WxFormatter(defaultEditorTheme)
         # bind style function
         self.Bind(wx.EVT_TEXT, self.StyleText)
         self.Bind(wx.EVT_KEY_UP, self.StyleText)
+    
+    def SetTheme(self, theme):
+        self.formatter = WxFormatter(theme)
+    
+    def GetTheme(self):
+        return self.formatter.theme
     
     def StyleText(self, evt=None):
         """
@@ -410,15 +454,10 @@ class StyledTextCtrl(wx.richtext.RichTextCtrl):
         """
         # freeze while we style
         self.GetBuffer().BeginSuppressUndo()
+        self.Freeze()
 
-        # set base font
-        baseFont = wx.Font()
-        baseFont.SetPointSize(10)
-        baseFont.SetFamily(wx.FONTFAMILY_TELETYPE)
-        if hasattr(self.theme, "font_family"):
-            baseFont.SetFaceName(self.theme.font_family)
         # set base background colour
-        self.SetBackgroundColour(wx.Colour(self.theme.background_color))
+        self.SetBackgroundColour(wx.Colour(self.GetTheme().background_color))
         # lex content to get tokens
         content = self.GetValue()
         tokens = pygments.lex(content, lexer=self.lexer)
@@ -428,22 +467,15 @@ class StyledTextCtrl(wx.richtext.RichTextCtrl):
             content = content[1:]
             i += 1
         for token, text in tokens:
-            # get style for this token
-            token_style = self.theme.style_for_token(token)
-            # create format object
-            char_font = wx.Font(baseFont)
-            char_font.SetStyle(wx.FONTSTYLE_ITALIC if token_style['italic'] else wx.FONTSTYLE_NORMAL)
-            char_font.SetWeight(wx.FONTWEIGHT_BOLD if token_style['bold'] else wx.FONTWEIGHT_NORMAL)
-            char_font.SetUnderlined(token_style['underline'])
-            char_format = wx.richtext.RichTextAttr(wx.TextAttr(wx.Colour(f"#{token_style['color']}"), font=char_font))
+            charFormat = self.formatter.GetTokenFont(token)
             # apply format object
-            self.SetStyleEx(wx.richtext.RichTextRange(i, i+len(text)), char_format)
+            self.SetStyleEx(wx.richtext.RichTextRange(i, i+len(text)), charFormat)
             # move forward to next token
             i += len(text)
         
         # thaw once done
         self.GetBuffer().EndSuppressUndo()
-        
+        self.Thaw()
         self.Update()
         self.Refresh()
 
@@ -466,6 +498,8 @@ class HTMLPreviewCtrl(wx.Panel):
         self.SetMinSize(minSize)
     
     def SetHtml(self, content, filename=None):
+        if not self.IsShown():
+            return
         # if not given a filename, use assets folder
         if filename is None:
             filename = Path(__file__).parent.parent / "assets" / "untitled.html"
@@ -473,3 +507,9 @@ class HTMLPreviewCtrl(wx.Panel):
         filename = filename.parent / (filename.stem + ".html")
         # set html
         self.view.SetPage(content, str(filename))
+    
+    def GetTheme(self):
+        return self.theme
+    
+    def SetTheme(self, theme):
+        self.theme = theme
