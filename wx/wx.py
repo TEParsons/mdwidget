@@ -77,7 +77,7 @@ class MarkdownCtrl(wx.Panel, flags.FlagAtrributeMixin):
         self._btns[flags.RENDERED_HTML_CTRL] = renderedHtmlBtn
 
         # bind update function
-        self.Bind(wx.EVT_IDLE, self.UpdateHtml)
+        self.Bind(wx.EVT_IDLE, self.OnSetMarkdownText)
 
         # set default style
         self.SetSelectionMode(flags.MULTI_SELECTION)
