@@ -445,6 +445,7 @@ class StyledTextCtrl(wx.richtext.RichTextCtrl):
         # bind style function
         self.Bind(wx.EVT_TEXT, self.StyleText)
         self.Bind(wx.EVT_KEY_UP, self.StyleText)
+        self.Bind(wx.EVT_SHOW, self.OnShow)
     
     def SetTheme(self, theme):
         self.formatter = MarkdownCtrlFormatter(theme)
@@ -488,6 +489,12 @@ class StyledTextCtrl(wx.richtext.RichTextCtrl):
         self.Thaw()
         self.Update()
         self.Refresh()
+
+    def OnShow(self, evt):
+        # style self
+        self.StyleText(evt)
+        # continue
+        evt.Skip()
 
 
 class HTMLPreviewCtrl(wx.Panel):
