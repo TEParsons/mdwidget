@@ -401,6 +401,9 @@ class StyledTextCtrl(qt.QTextEdit):
         """
         Apply pyments.style to text contents
         """
+        # don't restyle if ctrl is hidden
+        if not self.isVisible():
+            return
         # don't trigger any events while this method executes
         self.blockSignals(True)
         self.setUpdatesEnabled(False)

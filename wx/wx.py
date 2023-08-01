@@ -452,6 +452,9 @@ class StyledTextCtrl(wx.richtext.RichTextCtrl):
         """
         Apply pyments.style to text contents
         """
+        # don't restyle if ctrl is hidden
+        if not self.IsShown():
+            return
         # freeze while we style
         self.GetBuffer().BeginSuppressUndo()
         self.Freeze()
