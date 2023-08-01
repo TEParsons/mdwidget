@@ -390,7 +390,7 @@ class ViewToggleButton(wx.ToggleButton):
         self._icon = icon
 
 
-class WxFormatter:
+class MarkdownCtrlFormatter:
     def __init__(self, theme):
         self.theme = theme
         self.styles = {}
@@ -437,13 +437,13 @@ class StyledTextCtrl(wx.richtext.RichTextCtrl):
         # setup lexer
         self.lexer = pygments.lexers.get_lexer_by_name(language)
         # setup formatter
-        self.formatter = WxFormatter(defaultEditorTheme)
+        self.formatter = MarkdownCtrlFormatter(defaultEditorTheme)
         # bind style function
         self.Bind(wx.EVT_TEXT, self.StyleText)
         self.Bind(wx.EVT_KEY_UP, self.StyleText)
     
     def SetTheme(self, theme):
-        self.formatter = WxFormatter(theme)
+        self.formatter = MarkdownCtrlFormatter(theme)
     
     def GetTheme(self):
         return self.formatter.theme

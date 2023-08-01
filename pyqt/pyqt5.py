@@ -342,7 +342,7 @@ class ViewToggleButton(qt.QPushButton):
         self._icon = icon
 
 
-class PyQtFormatter:
+class MarkdownCtrlFormatter:
     def __init__(self, theme):
         self.theme = theme
         self.styles = {}
@@ -387,12 +387,12 @@ class StyledTextCtrl(qt.QTextEdit):
         # setup lexer
         self.lexer = pygments.lexers.get_lexer_by_name(language)
         # setup formatter
-        self.formatter = PyQtFormatter(defaultEditorTheme)
+        self.formatter = MarkdownCtrlFormatter(defaultEditorTheme)
         # bind style function
         self.textChanged.connect(self.styleText)
     
     def setTheme(self, theme):
-        self.formatter = PyQtFormatter(theme)
+        self.formatter = MarkdownCtrlFormatter(theme)
     
     def getTheme(self):
         return self.formatter.theme
