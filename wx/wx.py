@@ -477,7 +477,7 @@ class StyledTextCtrl(wx.richtext.RichTextCtrl):
             content = content[1:]
             i += 1
         for token, text in tokens:
-            charFormat = self.formatter.GetTokenFont(token)
+            charFormat = self.formatter.GetTokenStyle(token)
             # apply format object
             self.SetStyleEx(wx.richtext.RichTextRange(i, i+len(text)), charFormat)
             # move forward to next token
