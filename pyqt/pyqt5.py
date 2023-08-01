@@ -357,7 +357,7 @@ class MarkdownCtrlFormatter:
         
         return charFormat
     
-    def GetTokenFont(self, token):
+    def GetTokenStyle(self, token):
         if token not in self.styles:
             # get style for this token
             tokenStyle = self.theme.style_for_token(token)

@@ -1,6 +1,6 @@
 import traceback
 import enum
-import pygments, pygments.lexers
+import pygments, pygments.lexers, pygments.token
 import wx
 import wx.lib.splitter
 import wx.html2 as html
@@ -393,21 +393,25 @@ class ViewToggleButton(wx.ToggleButton):
 class MarkdownCtrlFormatter:
     def __init__(self, theme):
         self.theme = theme
+        self._baseFont = None
         self.styles = {}
     
     def GetBaseFont(self):
-        # blank font object
-        font = wx.Font()
-        # set font and size
-        font.SetPointSize(10)
-        font.SetFamily(wx.FONTFAMILY_TELETYPE)
-        # if we have a face name, set it
-        if hasattr(self.theme, "font_family"):
-            font.SetFaceName(self.theme.font_family)
+        if self._baseFont is None:
+            # blank font object
+            font = wx.Font()
+            # set font and size
+            font.SetPointSize(10)
+            font.SetFamily(wx.FONTFAMILY_TELETYPE)
+            # if we have a face name, set it
+            if hasattr(self.theme, "font_family"):
+                font.SetFaceName(self.theme.font_family)
+            
+            self._baseFont = font
         
-        return font
+        return self._baseFont
     
-    def GetTokenFont(self, token):
+    def GetTokenStyle(self, token):
         if token not in self.styles:
             # get style for this token
             tokenStyle = self.theme.style_for_token(token)
@@ -461,6 +465,9 @@ class StyledTextCtrl(wx.richtext.RichTextCtrl):
 
         # set base background colour
         self.SetBackgroundColour(wx.Colour(self.GetTheme().background_color))
+        # set base style
+        baseStyle = self.formatter.GetTokenStyle(pygments.token.Token)
+        self.SetBasicStyle(baseStyle)
         # lex content to get tokens
         content = self.GetValue()
         tokens = pygments.lex(content, lexer=self.lexer)
