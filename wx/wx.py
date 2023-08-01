@@ -51,7 +51,6 @@ class MarkdownCtrl(wx.Panel, flags.FlagAtrributeMixin):
         # add raw markdown ctrl
         rawMarkdownCtrl = self._ctrls[flags.RAW_MARKDOWN_CTRL] = StyledTextCtrl(ctrlsPanel, language="markdown", minSize=minCtrlSize, style=wx.richtext.RE_MULTILINE)
         ctrlsPanel.AppendWindow(rawMarkdownCtrl)
-        rawMarkdownCtrl.Bind(wx.EVT_TEXT, self.OnSetMarkdownText)
         # add view toggle button
         rawMarkdownBtn = ViewToggleButton(viewSwitcherCtrl, iconName="view_md", label="Markdown code")
         rawMarkdownBtn.Bind(wx.EVT_TOGGLEBUTTON, self.OnViewSwitcherButtonClicked)
