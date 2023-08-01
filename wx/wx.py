@@ -76,6 +76,9 @@ class MarkdownCtrl(wx.Panel, flags.FlagAtrributeMixin):
         viewSwitcherCtrl.sizer.Add(renderedHtmlBtn, border=3, flag=wx.ALL)
         self._btns[flags.RENDERED_HTML_CTRL] = renderedHtmlBtn
 
+        # bind update function
+        self.Bind(wx.EVT_IDLE, self.UpdateHtml)
+
         # set default style
         self.SetSelectionMode(flags.MULTI_SELECTION)
         self.SetView(flags.ALL_CTRLS)
@@ -101,13 +104,14 @@ class MarkdownCtrl(wx.Panel, flags.FlagAtrributeMixin):
         # populate raw HTML ctrl
         rawHtmlCtrl = self.GetCtrl(flags.RAW_HTML_CTRL)
         rawHtmlCtrl.SetValue(htmlBody)
-        # style raw HTML ctrl
-        rawHtmlCtrl.StyleText()
         # get full HTML
         htmlFull = self.GetHtml()
         # populate rendered HTML ctrl
         renderedHtmlCtrl = self.GetCtrl(flags.RENDERED_HTML_CTRL)
         renderedHtmlCtrl.SetHtml(htmlFull)
+        # skip event
+        if evt is not None:
+            evt.Skip()
     
     def GetHtmlBody(self):
         # get markdown
